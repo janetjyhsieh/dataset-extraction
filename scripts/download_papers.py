@@ -12,10 +12,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from pathlib import Path
 
 import openreview
 
 from dataset_extraction.downloader.papers import get_notes
+from dataset_extraction.downloader.pdf import download_pdfs
 
 
 def main() -> None:
@@ -49,6 +51,11 @@ def main() -> None:
         default="https://api2.openreview.net",
         help="OpenReview API base URL (default: v2 API)",
     )
+    parser.add_argument(
+        "--papers-dir",
+        default="papers",
+        help="Root directory for output (default: papers)",
+    )
     args = parser.parse_args()
 
     client = openreview.api.OpenReviewClient(
@@ -56,6 +63,10 @@ def main() -> None:
         username=args.username or None,
         password=args.password or None,
     )
+
+    papers_dir = Path(args.papers_dir)
+    index_path = papers_dir / "index.jsonl"
+    pdf_dir = papers_dir / "pdfs"
 
     print(args.keywords)
 
@@ -71,10 +82,12 @@ def main() -> None:
         if isinstance(keywords, dict):
             keywords = keywords.get("value", [])
         papers.append({"id": note.id, "title": title, "keywords": keywords})
-    
-    with open("papers/index.jsonl", "w") as f:
+
+    with open(index_path, "w") as f:
         for p in papers:
             f.write(json.dumps(p)+"\n")
+
+    download_pdfs(client, notes, pdf_dir)
 
 
 if __name__ == "__main__":
