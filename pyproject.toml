@@ -6,4 +6,6 @@ name = "dataset_extraction"
 version = "0.0.0"
 dependencies = [
     "openreview-py",
+    "anthropic",
+    "openai",
 ]
