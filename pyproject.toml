@@ -8,4 +8,6 @@ dependencies = [
     "openreview-py",
     "anthropic",
     "openai",
+    "pydantic",
+    "tinydb",
 ]
