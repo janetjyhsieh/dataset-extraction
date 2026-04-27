@@ -25,16 +25,13 @@ For BENCHMARK SUITES (e.g., GLUE, BIG-Bench, HELMET):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 1 — REASONING SCRATCHPAD (required before JSON)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Before producing any JSON output, write a short scratchpad section addressing:
+Before producing any JSON output, reason through the following questions:
 
   1. What is the paper's main method or contribution?
-  2. In which section(s) do the authors describe their datasets and 
-     experimental setup?
+  2. In which section(s) do the authors describe their datasets and experimental setup?
   3. What datasets are used, and for what purpose in the experiments?
   4. For each dataset: do the authors describe using a subset, applying filtering, creating new splits, re-annotating, combining with other data, or making any other changes? Quote the key sentence(s) as evidence.
   5. Are there any benchmark suites that need to be decomposed into sub-tasks?
-
-Label this section clearly: "## Scratchpad"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 2 — JSON OUTPUT
@@ -127,21 +124,23 @@ CONSISTENCY CHECK before finalizing each entry:
   - If the only change is using a standard published split, modifications must be false.
 
 OUTPUT SCHEMA:
-[
-  {
-    "dataset_name": "string",
-    "dataset_version": "string | null",
-    “bibliographic_string”: “string | null”
-    "aliases": ["string"],
-    "purpose": "string",
-    "split": "string | null",
-    "modifications": true | false,
-    "modification_details": "string | null",
-    "modification_evidence": "string | null",
-    "original_size": "string | null",
-    "used_size": "string | null",
-    "source_section": "string",
-    "notes": "string | null"
-  }
-]
+{
+    “dataset_usages”: [
+        {
+            “dataset_name”: “string”,
+            “dataset_version”: “string | null”,
+            “bibliographic_string”: “string | null”,
+            “aliases”: [“string”],
+            “purpose”: “string”,
+            “split”: “string | null”,
+            “modifications”: true | false,
+            “modification_details”: “string | null”,
+            “modification_evidence”: “string | null”,
+            “original_size”: “string | null”,
+            “used_size”: “string | null”,
+            “source_section”: “string”,
+            “notes”: “string | null”
+        }
+    ]
+}
 """
