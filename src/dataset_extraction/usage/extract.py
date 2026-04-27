@@ -38,7 +38,10 @@ def main() -> None:
     else:
         client = OpenAIClient(**kwargs)
 
-    print(extract_usage(args.pdf, client))
+    thinking, json_output = extract_usage(args.pdf, client)
+    print(json_output)
+    print("===thinking===")
+    print(thinking)
 
 
 if __name__ == "__main__":
