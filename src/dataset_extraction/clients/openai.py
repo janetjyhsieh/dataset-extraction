@@ -6,7 +6,7 @@ from pathlib import Path
 
 import openai
 
-DEFAULT_MODEL = "gpt-4o"
+DEFAULT_MODEL = "gpt-5"
 
 
 def _make_strict(schema: dict) -> dict:
