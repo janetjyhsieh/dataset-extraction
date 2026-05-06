@@ -6,7 +6,7 @@ from pathlib import Path
 
 import openai
 
-DEFAULT_MODEL = "gpt-4o"
+DEFAULT_MODEL = "gpt-5"
 
 
 def _make_strict(schema: dict) -> dict:
@@ -79,19 +79,24 @@ class OpenAIClient:
         pdf_path: str | Path,
         prompt: str,
         schema: dict,
-    ) -> dict:
-        """Send a PDF and prompt to OpenAI, returning output conforming to *schema*.
+        thinking: bool = False,
+    ) -> tuple[None, dict]:
+        """Send a PDF and prompt to OpenAI, returning structured output.
 
         Uses the JSON Schema ``response_format`` with strict mode to guarantee
-        the response matches the expected structure.
+        the response matches the expected structure. The *thinking* parameter is
+        accepted for interface compatibility but has no effect — OpenAI does not
+        expose internal reasoning.
 
         Args:
             pdf_path: Path to the PDF file.
             prompt: Instruction to send alongside the PDF.
             schema: JSON Schema dict describing the required output structure.
+            thinking: Accepted for interface compatibility, ignored.
 
         Returns:
-            A dict conforming to *schema*.
+            A ``(None, result)`` tuple where *result* is a dict conforming to
+            *schema*.
         """
         pdf_data = base64.standard_b64encode(Path(pdf_path).read_bytes()).decode("utf-8")
         filename = Path(pdf_path).name
@@ -121,4 +126,4 @@ class OpenAIClient:
                 },
             },
         )
-        return json.loads(response.choices[0].message.content)
+        return None, json.loads(response.choices[0].message.content)

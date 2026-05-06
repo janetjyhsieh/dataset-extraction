@@ -56,20 +56,20 @@ class ClaudeClient:
         pdf_path: str | Path,
         prompt: str,
         schema: dict,
-    ) -> dict:
-        """Send a PDF and prompt to Claude, returning output conforming to *schema*.
-
-        Forces structured output via tool use: Claude is required to call a
-        single tool whose input schema is *schema*, guaranteeing the response
-        matches the expected JSON structure.
+        thinking: bool = False,
+    ) -> tuple[str | None, dict]:
+        """Send a PDF and prompt to Claude, returning structured output.
 
         Args:
             pdf_path: Path to the PDF file.
             prompt: Instruction to send alongside the PDF.
             schema: JSON Schema dict describing the required output structure.
+            thinking: If True, enable extended thinking and return the
+                reasoning text as the first element of the tuple.
 
         Returns:
-            A dict conforming to *schema*.
+            A ``(thinking_text, result)`` tuple. *thinking_text* is the model's
+            reasoning if *thinking* is True, otherwise None.
         """
         pdf_data = base64.standard_b64encode(Path(pdf_path).read_bytes()).decode("utf-8")
 
@@ -79,10 +79,15 @@ class ClaudeClient:
             "input_schema": schema,
         }
 
+        thinking_param = (
+            {"type": "enabled", "budget_tokens": 10000} if thinking
+            else {"type": "disabled"}
+        )
+
         with self._client.messages.stream(
             model=self.model,
             max_tokens=16000,
-            thinking={"type": "adaptive"},
+            thinking=thinking_param,
             tools=[tool],
             tool_choice={"type": "tool", "name": "extract"},
             messages=[{
@@ -102,5 +107,9 @@ class ClaudeClient:
         ) as stream:
             final = stream.get_final_message()
 
+        thinking_text = (
+            "\n\n".join(b.thinking for b in final.content if b.type == "thinking") or None
+            if thinking else None
+        )
         tool_block = next(b for b in final.content if b.type == "tool_use")
-        return tool_block.input
+        return thinking_text, tool_block.input

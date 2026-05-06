@@ -27,7 +27,7 @@ def extract_datasets(
     Returns:
         An ``ExtractionResult`` containing structured dataset information.
     """
-    result = client.send_pdf_structured(
+    _, result = client.send_pdf_structured(
         pdf_path,
         DATASET_PROMPT,
         ExtractionResult.model_json_schema(),
