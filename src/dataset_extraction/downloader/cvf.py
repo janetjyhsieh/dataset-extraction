@@ -1,5 +1,15 @@
+"""Scrape and download CVF open access conference papers.
+
+Run as a module to download metadata and PDFs::
+
+    python -m dataset_extraction.downloader.cvf --conference CVPR --year 2023
+    python -m dataset_extraction.downloader.cvf --conference ICCV --year 2023 --metadata-only
+"""
+
 from __future__ import annotations
 
+import argparse
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -89,10 +99,13 @@ def download_pdf(paper: CvfPaper, output_dir: str | Path) -> Path:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    dest = output_dir / f"{paper.paper_id}.pdf"
+    if dest.exists():
+        return dest
+
     response = requests.get(paper.pdf_url, headers=_HEADERS, timeout=60)
     response.raise_for_status()
 
-    dest = output_dir / f"{paper.paper_id}.pdf"
     dest.write_bytes(response.content)
     return dest
 
@@ -117,3 +130,58 @@ def download_pdfs(papers: list[CvfPaper], output_dir: str | Path) -> list[Path]:
         except Exception as e:
             print(f"Warning: failed to download {paper.paper_id}: {e}")
     return paths
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Download CVF open access conference papers.",
+    )
+    parser.add_argument(
+        "--conference",
+        required=True,
+        help="CVF conference acronym, e.g. CVPR, ICCV, WACV",
+    )
+    parser.add_argument(
+        "--year",
+        type=int,
+        required=True,
+        help="Conference year, e.g. 2023",
+    )
+    parser.add_argument(
+        "--papers-dir",
+        default="papers",
+        help="Root directory for output (default: papers)",
+    )
+    parser.add_argument(
+        "--metadata-only",
+        action="store_true",
+        help="Write index.jsonl but skip PDF downloads",
+    )
+    args = parser.parse_args()
+
+    papers_dir = Path(args.papers_dir)
+    index_path = papers_dir / "index.jsonl"
+
+    print(f"Fetching {args.conference}{args.year} papers from CVF open access...")
+    papers = get_papers(args.conference, args.year)
+    print(f"Found {len(papers)} paper(s).")
+
+    papers_dir.mkdir(parents=True, exist_ok=True)
+    with open(index_path, "w") as f:
+        for paper in papers:
+            record = {
+                "id": paper.paper_id,
+                "title": paper.title,
+                "authors": paper.authors,
+                "abstract_url": paper.abstract_url,
+                "pdf_url": paper.pdf_url,
+            }
+            f.write(json.dumps(record) + "\n")
+    print(f"Wrote metadata to {index_path}")
+
+    if not args.metadata_only:
+        download_pdfs(papers, papers_dir / "pdfs")
+
+
+if __name__ == "__main__":
+    main()
