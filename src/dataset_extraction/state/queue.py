@@ -37,6 +37,17 @@ class Queue(Generic[T]):
         with open(self._path, "a") as f:
             f.write(validated.model_dump_json() + "\n")
 
+    def peek(self) -> T:
+        """Return the first job without removing it.
+
+        Raises:
+            IndexError: If the queue is empty.
+        """
+        jobs = self.all()
+        if not jobs:
+            raise IndexError("peek at an empty queue")
+        return jobs[0]
+
     def dequeue(self) -> T:
         """Remove and return the first job in the queue.
 
