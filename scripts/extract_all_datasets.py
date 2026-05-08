@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
@@ -31,23 +32,28 @@ def main() -> None:
     )
     parser.add_argument(
         "--papers-dir",
-        default="papers",
-        help="Root papers directory containing a pdfs/ subdirectory (default: papers)",
+        required=True,
+        help="Root papers directory containing a pdfs/ subdirectory",
     )
     parser.add_argument(
         "--db",
-        default="out/nodes.json",
-        help="Path to the TinyDB nodes database (default: out/nodes.json)",
+        default="nodes.json",
+        help="Filename for the TinyDB nodes database under state/ (default: nodes.json)",
     )
     args = parser.parse_args()
 
+    papers_dir = Path(args.papers_dir)
+    (papers_dir / "out").mkdir(parents=True, exist_ok=True)
+    (papers_dir / "state").mkdir(parents=True, exist_ok=True)
+
     kwargs = {} if args.model is None else {"model": args.model}
     client = ClaudeClient(**kwargs) if args.provider == "claude" else OpenAIClient(**kwargs)
-    nodes = Nodes(args.db)
+    db_path = papers_dir / "state" / args.db
+    nodes = Nodes(db_path)
 
     extract_all_datasets(args.papers_dir, client, nodes)
 
-    print(f"\nDone. {len(nodes)} node(s) total in {args.db}")
+    print(f"\nDone. {len(nodes)} node(s) total in {db_path}")
 
 
 if __name__ == "__main__":
