@@ -7,6 +7,7 @@ from typing import Union
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.state.graph import Nodes
+from dataset_extraction.state.nodes import DatasetNode
 
 from .datasets import ExtractionResult
 from .prompts import DATASET_PROMPT
@@ -53,7 +54,7 @@ def extract_all_datasets(
     pdfs = sorted(Path(papers_path).glob("pdfs/*.pdf"))
     print(f"Found {len(pdfs)} PDF(s) under {papers_path}/pdfs")
 
-    out_path = Path("out/extraction_results.jsonl")
+    out_path = Path(papers_path) / "out" / "extraction_results.jsonl"
 
     with out_path.open("a") as out_file:
         for pdf in pdfs:
@@ -71,6 +72,6 @@ def extract_all_datasets(
                 continue
 
             for dataset in result.new_datasets:
-                nodes.add(dataset)
+                nodes.add(DatasetNode(**dataset.model_dump()))
 
             print(f"saved {len(result.new_datasets)} dataset(s)")
