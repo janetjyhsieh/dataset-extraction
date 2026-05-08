@@ -6,8 +6,8 @@ from typing import Union
 
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.state.usages import UsageExtractionResult
 
+from .usages import UsageExtractionResult
 from .prompts import USAGE_PROMPT
 
 Client = Union[ClaudeClient, OpenAIClient]

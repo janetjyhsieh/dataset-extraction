@@ -6,9 +6,9 @@ from typing import Union
 
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.state.datasets import ExtractionResult
 from dataset_extraction.state.graph import Nodes
 
+from .datasets import ExtractionResult
 from .prompts import DATASET_PROMPT
 
 Client = Union[ClaudeClient, OpenAIClient]
