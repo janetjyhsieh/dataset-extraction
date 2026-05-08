@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tinydb import Query, TinyDB
 
-from .datasets import Dataset
+from dataset_extraction.state.nodes import DatasetNode
 
 
 # TODO(jy): check implementation
@@ -21,7 +21,7 @@ class Nodes:
     def __init__(self, db_path: str | Path) -> None:
         self._db = TinyDB(db_path)
 
-    def add(self, dataset: Dataset) -> int:
+    def add(self, dataset: DatasetNode) -> int:
         """Insert a dataset node and return its TinyDB document ID.
 
         If a node with the same name already exists it is replaced.
@@ -36,16 +36,16 @@ class Nodes:
         doc_id = self._db.upsert(dataset.model_dump(mode="json"), Q.name == dataset.name)
         return doc_id[0]
 
-    def get(self, name: str) -> Dataset | None:
+    def get(self, name: str) -> DatasetNode | None:
         """Return the dataset node with the given name, or None if not found."""
         results = self._db.search(Query().name == name)
         if not results:
             return None
-        return Dataset.model_validate(results[0])
+        return DatasetNode.model_validate(results[0])
 
-    def all(self) -> list[Dataset]:
+    def all(self) -> list[DatasetNode]:
         """Return all stored dataset nodes."""
-        return [Dataset.model_validate(doc) for doc in self._db.all()]
+        return [DatasetNode.model_validate(doc) for doc in self._db.all()]
 
     def exists(self, name: str) -> bool:
         """Return True if a node with the given name is already stored."""
