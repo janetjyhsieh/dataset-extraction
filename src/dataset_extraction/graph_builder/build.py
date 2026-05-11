@@ -60,6 +60,17 @@ def process_source_datasets(
         print(f"  Enqueued '{paper.title}'")
 
 
+def process_unprocessed_nodes(nodes: Nodes, queue: Queue[DatasetJob], working_dir: Path) -> None:
+    """Call process_source_datasets for every node with source_processed=False."""
+    unprocessed = [node for node in nodes.all() if not node.source_processed]
+    print(f"Found {len(unprocessed)} unprocessed node(s)")
+    for node in unprocessed:
+        print(f"Processing sources for: {node.name}")
+        process_source_datasets(node, nodes, queue, working_dir)
+        node.source_processed = True
+        nodes.add(node)
+
+
 def build(queue: Queue[DatasetJob], client: Client, nodes: Nodes, working_dir: Path) -> None:
     while len(queue) > 0:
         job = queue.peek()
@@ -103,6 +114,7 @@ def main() -> None:
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
     nodes = Nodes(working_dir / "state" / "graph.json")
+    process_unprocessed_nodes(nodes, queue, working_dir)
     build(queue, client, nodes, working_dir)
 
 
