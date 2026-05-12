@@ -12,4 +12,6 @@ dependencies = [
     "tinydb",
     "requests",
     "beautifulsoup4",
+    "networkx",
+    "pyvis",
 ]
