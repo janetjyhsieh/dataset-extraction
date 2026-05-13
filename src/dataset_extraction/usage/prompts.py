@@ -55,9 +55,15 @@ FIELDS for each entry:
     The specific version or release used, if stated.
     Example: "v1.1", "2017", "SuperGLUE". null if not mentioned.
 
-  bibliographic_string      (string | null)
-    The full bibliographic string of the dataset source paper, or null if no citation is given.
-    Example: “[5] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin. Attention is all you need. CoRR, abs/1706.03762, 2017. URL http://arxiv.org/abs/1706.03762.”
+  source_title         (string | null)
+    Title of the paper that introduced this dataset, extracted from the in-text citation.
+    null if no citation is given in the paper.
+    Example: “Attention Is All You Need”
+
+  source_first_author  (string | null)
+    Last name of the first author of the dataset source paper.
+    null if no citation is given in the paper.
+    Example: “Vaswani”
 
   aliases              (array of strings)
     Any other names or shorthand used for this dataset in the paper.
@@ -129,7 +135,8 @@ OUTPUT SCHEMA:
         {
             “dataset_name”: “string”,
             “dataset_version”: “string | null”,
-            “bibliographic_string”: “string | null”,
+            “source_title”: “string | null”,
+            “source_first_author”: “string | null”,
             “aliases”: [“string”],
             “purpose”: “string”,
             “split”: “string | null”,

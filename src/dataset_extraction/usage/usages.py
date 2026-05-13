@@ -6,7 +6,8 @@ from pydantic import BaseModel
 class DatasetUsage(BaseModel):
     dataset_name: str
     dataset_version: str | None
-    bibliographic_string: str | None
+    source_title: str | None
+    source_first_author: str | None
     aliases: list[str]
     # Free-form string to accommodate "other: <describe>" values.
     purpose: str
