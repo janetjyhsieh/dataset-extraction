@@ -24,8 +24,10 @@ def extract_datasets_and_save(job: DatasetJob, client: Client, nodes: Nodes) -> 
 
 
 def _already_seen(paper_title: str, nodes: Nodes, queue: Queue[DatasetJob]) -> bool:
+    #TODO: should be cap-insensitive
     if any(node.paper_title == paper_title for node in nodes.all()):
         return True
+    # TODO: debug this: job still get enqueued when titles are the exact same.
     return any(job.title == paper_title for job in queue.all())
 
 
