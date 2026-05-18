@@ -49,11 +49,11 @@ _LEGEND_HTML = """
 
   <div class="leg-row">
     <div class="leg-circle" style="width:14px;height:14px;background:#4e9af1;"></div>
-    <span>Paper in graph</span>
+    <span>Papers</span>
   </div>
   <div class="leg-row">
     <div class="leg-circle" style="width:14px;height:14px;background:#888888;"></div>
-    <span>External source paper</span>
+    <span>PDF not found</span>
   </div>
   <div class="leg-row">
     <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
@@ -173,6 +173,11 @@ def _build_extras(G: nx.DiGraph) -> str:
 
     return f"""
 <style>
+.vis-tooltip {{
+    white-space: pre-line !important;
+    font-family: Arial, sans-serif !important;
+    line-height: 1.5 !important;
+}}
 #component-controls {{
     position: fixed;
     top: 12px;
@@ -180,15 +185,36 @@ def _build_extras(G: nx.DiGraph) -> str:
     transform: translateX(-50%);
     z-index: 9999;
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
     background: rgba(28,28,28,0.93);
     padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid #444;
     max-width: 90vw;
 }}
+#comp-buttons {{
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}}
+#comp-buttons.collapsed {{
+    display: none;
+}}
+#controls-toggle {{
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    line-height: 1;
+    letter-spacing: 0.03em;
+}}
+#controls-toggle:hover {{ color: #ddd; }}
 .comp-btn {{
     padding: 4px 12px;
     border-radius: 4px;
@@ -254,7 +280,10 @@ def _build_extras(G: nx.DiGraph) -> str:
 }}
 </style>
 
-<div id="component-controls"></div>
+<div id="component-controls">
+  <div id="comp-buttons"></div>
+  <button id="controls-toggle" title="Collapse">▲ hide</button>
+</div>
 
 <div id="detail-panel">
   <div id="detail-content"></div>
@@ -269,13 +298,14 @@ def _build_extras(G: nx.DiGraph) -> str:
   var totalNodes = {total_nodes};
 
   // drawGraph() already ran synchronously above, so nodes/edges/network are defined.
-  var controls = document.getElementById('component-controls');
+  var compButtons = document.getElementById('comp-buttons');
+  var toggleBtn = document.getElementById('controls-toggle');
 
   var allBtn = document.createElement('button');
   allBtn.className = 'comp-btn active';
   allBtn.textContent = 'All (' + totalNodes + ')';
   allBtn.dataset.comp = 'all';
-  controls.appendChild(allBtn);
+  compButtons.appendChild(allBtn);
 
   if (numComps > 1) {{
     for (var i = 0; i < numComps; i++) {{
@@ -283,9 +313,14 @@ def _build_extras(G: nx.DiGraph) -> str:
       btn.className = 'comp-btn';
       btn.textContent = 'Component ' + (i + 1) + ' (' + compSizes[i] + ')';
       btn.dataset.comp = String(i);
-      controls.appendChild(btn);
+      compButtons.appendChild(btn);
     }}
   }}
+
+  toggleBtn.addEventListener('click', function() {{
+    var collapsed = compButtons.classList.toggle('collapsed');
+    toggleBtn.textContent = collapsed ? '▼ show' : '▲ hide';
+  }});
 
   function filterByComponent(compIdx) {{
     var nodeUpdate = [];
@@ -319,10 +354,10 @@ def _build_extras(G: nx.DiGraph) -> str:
     }}
   }}
 
-  controls.addEventListener('click', function(e) {{
+  compButtons.addEventListener('click', function(e) {{
     var btn = e.target.closest('.comp-btn');
     if (!btn) return;
-    controls.querySelectorAll('.comp-btn').forEach(function(b) {{ b.classList.remove('active'); }});
+    compButtons.querySelectorAll('.comp-btn').forEach(function(b) {{ b.classList.remove('active'); }});
     btn.classList.add('active');
     filterByComponent(btn.dataset.comp);
   }});
@@ -396,16 +431,16 @@ def render(G: nx.DiGraph, output_path: str | Path = "graph.html") -> Path:
         color = _KNOWN_COLOR if known else _EXTERNAL_COLOR
         label = (paper[:35] + "…") if len(paper) > 35 else paper
         names = data.get("dataset_names", [])
-        tooltip = f"<b>{paper}</b><br>{count} dataset(s)"
+        tooltip_lines = [paper, f"{count} dataset(s)"]
         if names:
-            tooltip += "<br><br><b>Datasets:</b><br>" + "<br>".join(f"• {n}" for n in names)
+            tooltip_lines += ["", "Datasets:"] + [f"  • {n}" for n in names]
         if not known:
-            tooltip += "<br><i>(external reference)</i>"
-        net.add_node(paper, label=label, title=tooltip, size=size, color=color, font={"size": 12})
+            tooltip_lines.append("(external reference)")
+        net.add_node(paper, label=label, title="\n".join(tooltip_lines), size=size, color=color, font={"size": 12})
 
     for src, dst, data in G.edges(data=True):
         datasets = data.get("datasets", [])
-        tooltip = "<br>".join(f"• {d}" for d in datasets)
+        tooltip = "\n".join(f"• {d}" for d in datasets)
         net.add_edge(src, dst, title=tooltip, width=1 + len(datasets))
 
     net.save_graph(str(output_path))
