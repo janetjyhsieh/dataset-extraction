@@ -87,6 +87,30 @@ _LEGEND_HTML = """
 """
 
 
+def _canonical_title_map(nodes: list[DatasetNode]) -> dict[str, str]:
+    """Return a mapping from normalized title → display title.
+
+    Known papers (node.paper_title) take priority; external source titles fill
+    in the rest so every title encountered has a single canonical form.
+    """
+    canonical: dict[str, str] = {}
+    for node in nodes:
+        if node.paper_title:
+            key = node.paper_title.strip().lower()
+            if key not in canonical:
+                canonical[key] = node.paper_title.strip()
+    for node in nodes:
+        if not node.paper_title:
+            continue
+        for source in node.sources:
+            t = source.source_paper.title
+            if t:
+                key = t.strip().lower()
+                if key not in canonical:
+                    canonical[key] = t.strip()
+    return canonical
+
+
 def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
     """Build a paper-level provenance DiGraph from dataset nodes.
 
@@ -94,13 +118,18 @@ def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
     in paper B was derived from a dataset introduced in paper A.
     """
     G = nx.DiGraph()
+    canonical = _canonical_title_map(nodes)
+
+    def canon(title: str) -> str:
+        return canonical.get(title.strip().lower(), title.strip())
 
     dataset_counts: dict[str, int] = {}
     dataset_names: dict[str, list[str]] = {}
     for node in nodes:
         if node.paper_title:
-            dataset_counts[node.paper_title] = dataset_counts.get(node.paper_title, 0) + 1
-            dataset_names.setdefault(node.paper_title, []).append(node.name)
+            c = canon(node.paper_title)
+            dataset_counts[c] = dataset_counts.get(c, 0) + 1
+            dataset_names.setdefault(c, []).append(node.name)
 
     for paper, count in dataset_counts.items():
         G.add_node(paper, dataset_count=count, known=True, dataset_names=dataset_names.get(paper, []))
@@ -108,16 +137,20 @@ def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
     for node in nodes:
         if not node.paper_title:
             continue
+        dst = canon(node.paper_title)
         for source in node.sources:
-            src_paper = source.source_paper.title
-            if not src_paper or src_paper == node.paper_title:
+            src_title = source.source_paper.title
+            if not src_title:
                 continue
-            if src_paper not in G:
-                G.add_node(src_paper, dataset_count=0, known=False, dataset_names=[])
-            if G.has_edge(src_paper, node.paper_title):
-                G[src_paper][node.paper_title]["datasets"].append(source.source_dataset_name)
+            src = canon(src_title)
+            if src == dst:
+                continue
+            if src not in G:
+                G.add_node(src, dataset_count=0, known=False, dataset_names=[])
+            if G.has_edge(src, dst):
+                G[src][dst]["datasets"].append(source.source_dataset_name)
             else:
-                G.add_edge(src_paper, node.paper_title, datasets=[source.source_dataset_name])
+                G.add_edge(src, dst, datasets=[source.source_dataset_name])
 
     return G
 
