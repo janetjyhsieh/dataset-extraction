@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import networkx as nx
@@ -95,12 +96,14 @@ def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
     G = nx.DiGraph()
 
     dataset_counts: dict[str, int] = {}
+    dataset_names: dict[str, list[str]] = {}
     for node in nodes:
         if node.paper_title:
             dataset_counts[node.paper_title] = dataset_counts.get(node.paper_title, 0) + 1
+            dataset_names.setdefault(node.paper_title, []).append(node.name)
 
     for paper, count in dataset_counts.items():
-        G.add_node(paper, dataset_count=count, known=True)
+        G.add_node(paper, dataset_count=count, known=True, dataset_names=dataset_names.get(paper, []))
 
     for node in nodes:
         if not node.paper_title:
@@ -110,13 +113,215 @@ def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
             if not src_paper or src_paper == node.paper_title:
                 continue
             if src_paper not in G:
-                G.add_node(src_paper, dataset_count=0, known=False)
+                G.add_node(src_paper, dataset_count=0, known=False, dataset_names=[])
             if G.has_edge(src_paper, node.paper_title):
                 G[src_paper][node.paper_title]["datasets"].append(source.source_dataset_name)
             else:
                 G.add_edge(src_paper, node.paper_title, datasets=[source.source_dataset_name])
 
     return G
+
+
+def _build_extras(G: nx.DiGraph) -> str:
+    """Generate injectable HTML/CSS/JS for component toggle and detail sidebar."""
+    components = list(nx.weakly_connected_components(G))
+    node_to_comp = {node: i for i, comp in enumerate(components) for node in comp}
+    comp_sizes = [len(c) for c in components]
+    num_comps = len(components)
+    total_nodes = G.number_of_nodes()
+
+    node_details = {
+        paper: {
+            "known": data.get("known", False),
+            "dataset_names": data.get("dataset_names", []),
+        }
+        for paper, data in G.nodes(data=True)
+    }
+
+    return f"""
+<style>
+#component-controls {{
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    background: rgba(28,28,28,0.93);
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    max-width: 90vw;
+}}
+.comp-btn {{
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #333;
+    color: #ddd;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    transition: background 0.15s;
+}}
+.comp-btn:hover {{ background: #444; }}
+.comp-btn.active {{
+    background: {_KNOWN_COLOR};
+    border-color: {_KNOWN_COLOR};
+    color: white;
+}}
+#detail-panel {{
+    position: fixed;
+    top: 60px;
+    right: 24px;
+    width: 280px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    background: rgba(28,28,28,0.93);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: #ddd;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    z-index: 9999;
+    display: none;
+    box-sizing: border-box;
+}}
+#detail-panel h4 {{
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #fff;
+    border-bottom: 1px solid #555;
+    padding-bottom: 7px;
+    word-break: break-word;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}}
+.detail-close {{
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}}
+.detail-close:hover {{ color: #ddd; }}
+#detail-panel ul {{
+    margin: 6px 0 0 0;
+    padding-left: 18px;
+    line-height: 1.7;
+}}
+</style>
+
+<div id="component-controls"></div>
+
+<div id="detail-panel">
+  <div id="detail-content"></div>
+</div>
+
+<script>
+(function() {{
+  var nodeComponents = {json.dumps(node_to_comp)};
+  var nodeDetails = {json.dumps(node_details)};
+  var compSizes = {json.dumps(comp_sizes)};
+  var numComps = {num_comps};
+  var totalNodes = {total_nodes};
+
+  // drawGraph() already ran synchronously above, so nodes/edges/network are defined.
+  var controls = document.getElementById('component-controls');
+
+  var allBtn = document.createElement('button');
+  allBtn.className = 'comp-btn active';
+  allBtn.textContent = 'All (' + totalNodes + ')';
+  allBtn.dataset.comp = 'all';
+  controls.appendChild(allBtn);
+
+  if (numComps > 1) {{
+    for (var i = 0; i < numComps; i++) {{
+      var btn = document.createElement('button');
+      btn.className = 'comp-btn';
+      btn.textContent = 'Component ' + (i + 1) + ' (' + compSizes[i] + ')';
+      btn.dataset.comp = String(i);
+      controls.appendChild(btn);
+    }}
+  }}
+
+  function filterByComponent(compIdx) {{
+    var nodeUpdate = [];
+    nodes.forEach(function(node) {{
+      nodeUpdate.push({{
+        id: node.id,
+        hidden: compIdx !== 'all' && nodeComponents[node.id] !== parseInt(compIdx)
+      }});
+    }});
+    nodes.update(nodeUpdate);
+
+    var edgeUpdate = [];
+    edges.forEach(function(edge) {{
+      edgeUpdate.push({{
+        id: edge.id,
+        hidden: compIdx !== 'all' && (
+          nodeComponents[edge.from] !== parseInt(compIdx) ||
+          nodeComponents[edge.to] !== parseInt(compIdx)
+        )
+      }});
+    }});
+    edges.update(edgeUpdate);
+
+    if (compIdx === 'all') {{
+      network.fit({{ animation: {{ duration: 500 }} }});
+    }} else {{
+      var visible = nodeUpdate
+        .filter(function(n) {{ return !n.hidden; }})
+        .map(function(n) {{ return n.id; }});
+      network.fit({{ nodes: visible, animation: {{ duration: 500 }} }});
+    }}
+  }}
+
+  controls.addEventListener('click', function(e) {{
+    var btn = e.target.closest('.comp-btn');
+    if (!btn) return;
+    controls.querySelectorAll('.comp-btn').forEach(function(b) {{ b.classList.remove('active'); }});
+    btn.classList.add('active');
+    filterByComponent(btn.dataset.comp);
+  }});
+
+  network.on('click', function(params) {{
+    var panel = document.getElementById('detail-panel');
+    var content = document.getElementById('detail-content');
+    if (params.nodes.length === 0) {{
+      panel.style.display = 'none';
+      return;
+    }}
+    var nodeId = params.nodes[0];
+    var det = nodeDetails[nodeId] || {{}};
+    var names = det.dataset_names || [];
+    var html = '<h4><span>' + nodeId + '</span>' +
+      '<button class="detail-close" title="Close">&#x2715;</button></h4>';
+    if (det.known) {{
+      html += '<b>Datasets proposed (' + names.length + '):</b><ul>';
+      names.forEach(function(n) {{ html += '<li>' + n + '</li>'; }});
+      html += '</ul>';
+    }} else {{
+      html += '<em style="color:#888">External reference — datasets not extracted from this paper.</em>';
+    }}
+    content.innerHTML = html;
+    panel.style.display = 'block';
+    content.querySelector('.detail-close').addEventListener('click', function() {{
+      panel.style.display = 'none';
+    }});
+  }});
+}})();
+</script>
+"""
 
 
 def render(G: nx.DiGraph, output_path: str | Path = "graph.html") -> Path:
@@ -157,7 +362,10 @@ def render(G: nx.DiGraph, output_path: str | Path = "graph.html") -> Path:
         size = 20 + count * 6
         color = _KNOWN_COLOR if known else _EXTERNAL_COLOR
         label = (paper[:35] + "…") if len(paper) > 35 else paper
+        names = data.get("dataset_names", [])
         tooltip = f"<b>{paper}</b><br>{count} dataset(s)"
+        if names:
+            tooltip += "<br><br><b>Datasets:</b><br>" + "<br>".join(f"• {n}" for n in names)
         if not known:
             tooltip += "<br><i>(external reference)</i>"
         net.add_node(paper, label=label, title=tooltip, size=size, color=color, font={"size": 12})
@@ -170,7 +378,7 @@ def render(G: nx.DiGraph, output_path: str | Path = "graph.html") -> Path:
     net.save_graph(str(output_path))
 
     html = output_path.read_text(encoding="utf-8")
-    html = html.replace("</body>", _LEGEND_HTML + "\n</body>")
+    html = html.replace("</body>", _LEGEND_HTML + _build_extras(G) + "\n</body>")
     output_path.write_text(html, encoding="utf-8")
 
     return output_path
