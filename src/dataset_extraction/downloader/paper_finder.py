@@ -5,13 +5,12 @@ import os
 import re
 import time
 from pathlib import Path
-from xml.etree import ElementTree
 
+import arxiv
 import requests
 from bs4 import BeautifulSoup
 
 _S2_SEARCH = "https://api.semanticscholar.org/graph/v1/paper/search"
-_ARXIV_SEARCH = "http://export.arxiv.org/api/query"
 _CVF_BASE = "https://openaccess.thecvf.com"
 _CVF_VENUES = {"cvpr": "CVPR", "iccv": "ICCV", "wacv": "WACV"}
 _ACL_VENUES = {"acl", "emnlp", "naacl", "eacl", "coling"}
@@ -357,28 +356,20 @@ def _pdf_from_venue(external_ids: dict, year: int, title: str, verbose: bool = F
 
 def _search_arxiv(title: str, verbose: bool = False) -> str | None:
     try:
-        resp = _get_with_backoff(
-            _ARXIV_SEARCH,
-            params={"search_query": f"ti:{title}", "max_results": 3},
-            timeout=15,
-            verbose=verbose,
-        )
-        if verbose:
-            print(f"  arXiv status: {resp.status_code}")
-        resp.raise_for_status()
-        ns = {"atom": "http://www.w3.org/2005/Atom"}
-        root = ElementTree.fromstring(resp.text)
-        for entry in root.findall("atom:entry", ns):
-            result_title = entry.findtext("atom:title", "", ns).strip()
-            arxiv_id = entry.findtext("atom:id", "", ns).strip()
-            match = _titles_match(title, result_title)
+        client = arxiv.Client()
+        results = client.results(arxiv.Search(
+            query=f'ti:"{title}"',
+            max_results=3,
+            sort_by=arxiv.SortCriterion.Relevance,
+        ))
+        for paper in results:
+            match = _titles_match(title, paper.title)
             if verbose:
-                print(f"  arXiv result: {result_title!r}")
-                print(f"    id: {arxiv_id}")
+                print(f"  arXiv result: {paper.title!r}")
+                print(f"    id: {paper.entry_id}")
                 print(f"    title match: {match}")
-            if not match:
-                continue
-            return arxiv_id.replace("/abs/", "/pdf/")
+            if match:
+                return paper.pdf_url
     except Exception as e:
         if verbose:
             print(f"  arXiv error: {e}")
