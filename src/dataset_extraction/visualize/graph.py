@@ -11,6 +11,7 @@ _KNOWN_COLOR = "#4e9af1"
 _EXTERNAL_COLOR = "#888888"
 _EDGE_COLOR = "#aaaaaa"
 _EDGE_HIGHLIGHT = "#f0a500"
+_USAGE_COLOR = "#e8a838"
 
 _LEGEND_HTML = """
 <style>
@@ -82,16 +83,30 @@ _LEGEND_HTML = """
     </div>
   </div>
 
+  <div class="leg-section">
+    <div class="leg-row">
+      <div style="width:14px;height:14px;border-radius:50%;border:2px dashed #e8a838;flex-shrink:0;box-sizing:border-box;"></div>
+      <span>Usage-only paper</span>
+    </div>
+    <div class="leg-row">
+      <div style="width:26px;height:0;border-top:2px dashed #e8a838;flex-shrink:0;"></div>
+      <span>Dataset used by (→)</span>
+    </div>
+  </div>
+
   <div class="leg-hint">Hover nodes or edges for details</div>
 </div>
 """
 
 
-def _canonical_title_map(nodes: list[DatasetNode]) -> dict[str, str]:
+def _canonical_title_map(
+    nodes: list[DatasetNode],
+    extra_titles: list[str] | None = None,
+) -> dict[str, str]:
     """Return a mapping from normalized title → display title.
 
     Known papers (node.paper_title) take priority; external source titles fill
-    in the rest so every title encountered has a single canonical form.
+    in the rest; extra_titles (e.g. from usage data) are added last.
     """
     canonical: dict[str, str] = {}
     for node in nodes:
@@ -108,17 +123,26 @@ def _canonical_title_map(nodes: list[DatasetNode]) -> dict[str, str]:
                 key = t.strip().lower()
                 if key not in canonical:
                     canonical[key] = t.strip()
+    for t in (extra_titles or []):
+        if t:
+            key = t.strip().lower()
+            if key not in canonical:
+                canonical[key] = t.strip()
     return canonical
 
 
-def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
+def build_paper_graph(
+    nodes: list[DatasetNode],
+    canonical: dict[str, str] | None = None,
+) -> nx.DiGraph:
     """Build a paper-level provenance DiGraph from dataset nodes.
 
     Each graph node is a paper (keyed by title). An edge A → B means a dataset
     in paper B was derived from a dataset introduced in paper A.
     """
     G = nx.DiGraph()
-    canonical = _canonical_title_map(nodes)
+    if canonical is None:
+        canonical = _canonical_title_map(nodes)
 
     def canon(title: str) -> str:
         return canonical.get(title.strip().lower(), title.strip())
@@ -155,6 +179,55 @@ def build_paper_graph(nodes: list[DatasetNode]) -> nx.DiGraph:
     return G
 
 
+def load_usage_pairs(usages_path: str | Path) -> list[tuple[str, str, str]]:
+    """Load (source_title, paper_title, dataset_name) triples from a TinyDB usages file."""
+    path = Path(usages_path)
+    if not path.exists():
+        return []
+    with open(path) as f:
+        data = json.load(f)
+    triples = []
+    for rec in data.get("usages", {}).values():
+        if rec.get("source_title") is None:
+            continue
+        source = rec["source_title"].strip()
+        paper = (rec.get("paper_title") or "").strip()
+        dataset = (rec.get("dataset_name") or "").strip()
+        if source and paper:
+            triples.append((source, paper, dataset))
+    return triples
+
+
+def add_usage_edges(
+    G: nx.DiGraph,
+    usage_triples: list[tuple[str, str, str]],
+    canonical: dict[str, str],
+) -> None:
+    """Add usage edges to G in-place.
+
+    Each triple (source_title, paper_title, dataset_name) means paper_title
+    used a dataset from source_title. Aggregates dataset names per pair.
+    Skips pairs where a provenance edge already exists in that direction.
+    """
+    def canon(title: str) -> str:
+        return canonical.get(title.strip().lower(), title.strip())
+
+    usage_datasets: dict[tuple[str, str], list[str]] = {}
+    for source_title, paper_title, dataset_name in usage_triples:
+        src = canon(source_title)
+        dst = canon(paper_title)
+        if src != dst:
+            usage_datasets.setdefault((src, dst), []).append(dataset_name)
+
+    for (src, dst), datasets in usage_datasets.items():
+        if src not in G:
+            G.add_node(src, dataset_count=0, known=False, dataset_names=[], usage_only=True)
+        if dst not in G:
+            G.add_node(dst, dataset_count=0, known=False, dataset_names=[], usage_only=True)
+        if not G.has_edge(src, dst):
+            G.add_edge(src, dst, is_usage=True, datasets=datasets)
+
+
 def _build_extras(G: nx.DiGraph) -> str:
     """Generate injectable HTML/CSS/JS for component toggle and detail sidebar."""
     components = list(nx.weakly_connected_components(G))
@@ -166,6 +239,7 @@ def _build_extras(G: nx.DiGraph) -> str:
     node_details = {
         paper: {
             "known": data.get("known", False),
+            "usage_only": data.get("usage_only", False),
             "dataset_names": data.get("dataset_names", []),
         }
         for paper, data in G.nodes(data=True)
@@ -378,6 +452,8 @@ def _build_extras(G: nx.DiGraph) -> str:
       html += '<b>Datasets proposed (' + names.length + '):</b><ul>';
       names.forEach(function(n) {{ html += '<li>' + n + '</li>'; }});
       html += '</ul>';
+    }} else if (det.usage_only) {{
+      html += '<em style="color:#888">Usage-only paper — appears in usage data but not in the provenance graph.</em>';
     }} else {{
       html += '<em style="color:#888">External reference — datasets not extracted from this paper.</em>';
     }}
@@ -427,21 +503,39 @@ def render(G: nx.DiGraph, output_path: str | Path = "graph.html") -> Path:
     for paper, data in G.nodes(data=True):
         count = data.get("dataset_count", 0)
         known = data.get("known", False)
+        usage_only = data.get("usage_only", False)
         size = 20 + count * 6
-        color = _KNOWN_COLOR if known else _EXTERNAL_COLOR
         label = (paper[:35] + "…") if len(paper) > 35 else paper
         names = data.get("dataset_names", [])
         tooltip_lines = [paper, f"{count} dataset(s)"]
         if names:
             tooltip_lines += ["", "Datasets:"] + [f"  • {n}" for n in names]
-        if not known:
+        if usage_only:
+            tooltip_lines.append("(usage only — not in provenance graph)")
+        elif not known:
             tooltip_lines.append("(external reference)")
-        net.add_node(paper, label=label, title="\n".join(tooltip_lines), size=size, color=color, font={"size": 12})
+
+        if usage_only:
+            net.add_node(
+                paper, label=label, title="\n".join(tooltip_lines),
+                size=size, color=_USAGE_COLOR, font={"size": 12},
+                borderWidth=2, shapeProperties={"borderDashes": [5, 5]},
+            )
+        else:
+            color = _KNOWN_COLOR if known else _EXTERNAL_COLOR
+            net.add_node(paper, label=label, title="\n".join(tooltip_lines), size=size, color=color, font={"size": 12})
 
     for src, dst, data in G.edges(data=True):
         datasets = data.get("datasets", [])
+        is_usage = data.get("is_usage", False)
         tooltip = "\n".join(f"• {d}" for d in datasets)
-        net.add_edge(src, dst, title=tooltip, width=1 + len(datasets))
+        if is_usage:
+            net.add_edge(
+                src, dst, title=tooltip, width=1 + len(datasets),
+                dashes=[5, 5], color=_USAGE_COLOR,
+            )
+        else:
+            net.add_edge(src, dst, title=tooltip, width=1 + len(datasets))
 
     net.save_graph(str(output_path))
 
@@ -452,7 +546,23 @@ def render(G: nx.DiGraph, output_path: str | Path = "graph.html") -> Path:
     return output_path
 
 
-def visualize(nodes_store: Nodes, output_path: str | Path = "graph.html") -> Path:
-    """Build and render the provenance graph from a Nodes store."""
-    G = build_paper_graph(nodes_store.all())
+def visualize(
+    nodes_store: Nodes,
+    output_path: str | Path = "graph.html",
+    usages_path: str | Path | None = None,
+) -> Path:
+    """Build and render the provenance graph from a Nodes store.
+
+    If usages_path is provided, usage edges (dotted) are overlaid on the graph.
+    """
+    dataset_nodes = nodes_store.all()
+    usage_triples = load_usage_pairs(usages_path) if usages_path else []
+
+    extra_titles = [t for src, dst, _ in usage_triples for t in (src, dst)]
+    canonical = _canonical_title_map(dataset_nodes, extra_titles=extra_titles)
+
+    G = build_paper_graph(dataset_nodes, canonical=canonical)
+    if usage_triples:
+        add_usage_edges(G, usage_triples, canonical)
+
     return render(G, output_path)
