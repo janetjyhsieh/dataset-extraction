@@ -23,7 +23,7 @@ class PdfInfo(BaseModel):
     year: int | None = None
     pdf_download_source: PdfDownloadSource | None = None
 
-class Paper(BaseModel):
+class PaperInfo(BaseModel):
     paper_title: str
     normalized_paper_title: str | None = None
     pdf_info: PdfInfo

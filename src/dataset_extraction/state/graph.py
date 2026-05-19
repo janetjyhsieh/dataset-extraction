@@ -105,7 +105,7 @@ class UsageNodes:
 class Papers:
     """Persistent store for paper metadata backed by TinyDB.
 
-    Each entry is a :class:`Paper` model keyed by ``paper_title``.
+    Each entry is a :class:`PaperInfo` model keyed by ``paper_title``.
 
     Args:
         db_path: Path to the TinyDB JSON file. Created if it does not exist.
@@ -114,22 +114,22 @@ class Papers:
     def __init__(self, db_path: str | Path) -> None:
         self._db = TinyDB(db_path)
 
-    def add(self, paper: Paper) -> int:
+    def add(self, paper: PaperInfo) -> int:
         """Upsert a paper and return its TinyDB document ID."""
         Q = Query()
         doc_id = self._db.upsert(paper.model_dump(mode="json"), Q.paper_title == paper.paper_title)
         return doc_id[0]
 
-    def get(self, paper_title: str) -> Paper | None:
+    def get(self, paper_title: str) -> PaperInfo | None:
         """Return the paper with the given title, or None if not found."""
         results = self._db.search(Query().paper_title == paper_title)
         if not results:
             return None
-        return Paper.model_validate(results[0])
+        return PaperInfo.model_validate(results[0])
 
-    def all(self) -> list[Paper]:
+    def all(self) -> list[PaperInfo]:
         """Return all stored papers."""
-        return [Paper.model_validate(doc) for doc in self._db.all()]
+        return [PaperInfo.model_validate(doc) for doc in self._db.all()]
 
     def exists(self, paper_title: str) -> bool:
         """Return True if a paper with the given title is already stored."""
