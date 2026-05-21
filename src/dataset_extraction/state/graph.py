@@ -23,10 +23,35 @@ class _NodeStore(Generic[_T]):
     def _q(self, value: str):
         return getattr(Query(), self._key_field) == value
 
-    def add(self, node: _T) -> int:
-        """Upsert a node and return its TinyDB document ID."""
-        doc_id = self._db.upsert(node.model_dump(mode="json"), self._q(getattr(node, self._key_field)))
+    def _key(self, node: _T) -> str:
+        return getattr(node, self._key_field)
+
+    def upsert(self, node: _T) -> int:
+        """Insert or update a node and return its TinyDB document ID."""
+        doc_id = self._db.upsert(node.model_dump(mode="json"), self._q(self._key(node)))
         return doc_id[0]
+
+    def insert(self, node: _T) -> int:
+        """Insert a new node and return its TinyDB document ID.
+
+        Raises:
+            KeyError: If a node with the same key already exists.
+        """
+        key = self._key(node)
+        if self._db.contains(self._q(key)):
+            raise KeyError(f"{self._key_field}={key!r} already exists")
+        return self._db.insert(node.model_dump(mode="json"))
+
+    def update(self, node: _T) -> None:
+        """Update an existing node in place.
+
+        Raises:
+            KeyError: If no node with the given key exists.
+        """
+        key = self._key(node)
+        if not self._db.contains(self._q(key)):
+            raise KeyError(f"{self._key_field}={key!r} not found")
+        self._db.update(node.model_dump(mode="json"), self._q(key))
 
     def get(self, key: str) -> _T | None:
         """Return the node with the given key, or None if not found."""
