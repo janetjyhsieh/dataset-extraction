@@ -51,7 +51,7 @@ class _NodeStore(Generic[_T]):
         return len(self._db)
 
 
-class Nodes(_NodeStore[DatasetNode]):
+class DatasetNodes(_NodeStore[DatasetNode]):
     """Persistent store for dataset nodes, keyed by dataset name."""
 
     def __init__(self, db_path: str | Path) -> None:

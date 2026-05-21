@@ -19,7 +19,7 @@ from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
 from dataset_extraction.graph_builder.build import _already_seen, build
-from dataset_extraction.state.graph import DatasetPaperNodes, Nodes, UsageNodes
+from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, UsageNodes
 from dataset_extraction.state.nodes import UsageNode
 from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
@@ -127,7 +127,7 @@ def main() -> None:
 
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
-    nodes = Nodes(working_dir / "state" / "graph.json")
+    nodes = DatasetNodes(working_dir / "state" / "graph.json")
     paper_nodes = DatasetPaperNodes(working_dir / "state" / "paper_nodes.json")
     usage_nodes = UsageNodes(working_dir / "state" / "usages.json")
 

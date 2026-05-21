@@ -6,7 +6,7 @@ from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.dataset.extractor import extract_datasets
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
-from dataset_extraction.state.graph import DatasetPaperNodes, Nodes
+from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes
 from dataset_extraction.state.nodes import DatasetNode
 from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
@@ -17,7 +17,7 @@ Client = Union[ClaudeClient, OpenAIClient]
 def extract_datasets_and_save(
     job: DatasetJob,
     client: Client,
-    nodes: Nodes,
+    nodes: DatasetNodes,
 ) -> list[DatasetNode]:
     result = extract_datasets(job.pdf_path, client)
     new_dataset_nodes = []
@@ -39,7 +39,7 @@ def _already_seen(canonical_title: str, paper_nodes: DatasetPaperNodes) -> bool:
 def process_source_datasets(
     dataset_node: DatasetNode,
     paper_node: DatasetPaperNode,
-    nodes: Nodes,
+    nodes: DatasetNodes,
     paper_nodes: DatasetPaperNodes,
     queue: Queue[DatasetJob],
     working_dir: Path,
@@ -77,7 +77,7 @@ def process_source_datasets(
 
 
 def process_unprocessed_nodes(
-    nodes: Nodes,
+    nodes: DatasetNodes,
     paper_nodes: DatasetPaperNodes,
     queue: Queue[DatasetJob],
     working_dir: Path,
@@ -97,7 +97,7 @@ def process_unprocessed_nodes(
 def build(
     queue: Queue[DatasetJob],
     client: Client,
-    nodes: Nodes,
+    nodes: DatasetNodes,
     paper_nodes: DatasetPaperNodes,
     working_dir: Path,
 ) -> None:
@@ -144,7 +144,7 @@ def main() -> None:
 
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
-    nodes = Nodes(working_dir / "state" / "graph.json")
+    nodes = DatasetNodes(working_dir / "state" / "graph.json")
     paper_nodes = DatasetPaperNodes(working_dir / "state" / "paper_nodes.json")
     process_unprocessed_nodes(nodes, paper_nodes, queue, working_dir)
     build(queue, client, nodes, paper_nodes, working_dir)

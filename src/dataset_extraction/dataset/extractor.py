@@ -6,7 +6,7 @@ from typing import Union
 
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.state.graph import Nodes
+from dataset_extraction.state.graph import DatasetNodes
 from dataset_extraction.state.nodes import DatasetNode
 
 from .datasets import ExtractionResult
@@ -39,7 +39,7 @@ def extract_datasets(
 def extract_all_datasets(
     papers_path: str | Path,
     client: Client,
-    nodes: Nodes,
+    nodes: DatasetNodes,
 ) -> None:
     """Extract datasets from all PDFs under *papers_path*/pdfs and save to *nodes*.
 
@@ -49,7 +49,7 @@ def extract_all_datasets(
     Args:
         papers_path: Root papers directory containing a ``pdfs/`` subdirectory.
         client: An instantiated ``ClaudeClient`` or ``OpenAIClient``.
-        nodes: The ``Nodes`` store where extracted datasets will be saved.
+        nodes: The ``DatasetNodes`` store where extracted datasets will be saved.
     """
     pdfs = sorted(Path(papers_path).glob("pdfs/*.pdf"))
     print(f"Found {len(pdfs)} PDF(s) under {papers_path}/pdfs")
