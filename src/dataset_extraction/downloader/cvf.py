@@ -2,14 +2,15 @@
 
 Run as a module to download metadata and PDFs::
 
-    python -m dataset_extraction.downloader.cvf --conference CVPR --year 2023
-    python -m dataset_extraction.downloader.cvf --conference ICCV --year 2023 --metadata-only
+    python -m dataset_extraction.downloader.cvf --venue CVPR --year 2023
+    python -m dataset_extraction.downloader.cvf --venue ICCV --year 2023 --metadata-only
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,17 +31,17 @@ class CvfPaper:
     pdf_url: str
 
 
-def get_papers(conference: str, year: int) -> list[CvfPaper]:
-    """Fetch paper metadata for a CVF open access conference.
+def get_papers(venue: str, year: int) -> list[CvfPaper]:
+    """Fetch paper metadata for a CVF open access venue.
 
     Args:
-        conference: Conference acronym, e.g. ``'CVPR'``, ``'ICCV'``, ``'WACV'``.
-        year: Conference year, e.g. ``2023``.
+        venue: Venue acronym, e.g. ``'CVPR'``, ``'ICCV'``, ``'WACV'``.
+        year: Venue year, e.g. ``2023``.
 
     Returns:
         A list of :class:`CvfPaper` objects for all accepted papers.
     """
-    url = f"{CVF_BASE}/{conference}{year}?day=all"
+    url = f"{CVF_BASE}/{venue}{year}?day=all"
     response = requests.get(url, headers=_HEADERS, timeout=30)
     response.raise_for_status()
 
@@ -132,23 +133,28 @@ def download_pdfs(papers: list[CvfPaper], output_dir: str | Path) -> list[Path]:
     return paths
 
 
+def _title_matches(title: str, keywords: list[str]) -> bool:
+    words = set(re.findall(r"[a-z]+", title.lower()))
+    return any(kw.lower() in words for kw in keywords)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Download CVF open access conference papers.",
     )
     parser.add_argument(
-        "--conference",
+        "--venue",
         required=True,
-        help="CVF conference acronym, e.g. CVPR, ICCV, WACV",
+        help="CVF venue acronym, e.g. CVPR, ICCV, WACV",
     )
     parser.add_argument(
         "--year",
         type=int,
         required=True,
-        help="Conference year, e.g. 2023",
+        help="Venue year, e.g. 2023",
     )
     parser.add_argument(
-        "--papers-dir",
+        "--working-dir",
         default="papers",
         help="Root directory for output (default: papers)",
     )
@@ -157,30 +163,53 @@ def main() -> None:
         action="store_true",
         help="Write index.jsonl but skip PDF downloads",
     )
+    parser.add_argument(
+        "--keywords",
+        nargs="+",
+        default=None,
+        help="Only include papers whose title contains any keyword (case-insensitive OR match)",
+    )
     args = parser.parse_args()
 
-    papers_dir = Path(args.papers_dir)
-    index_path = papers_dir / "index.jsonl"
+    working_dir = Path(args.working_dir)
+    index_path = working_dir / "index.jsonl"
 
-    print(f"Fetching {args.conference}{args.year} papers from CVF open access...")
-    papers = get_papers(args.conference, args.year)
+    existing_ids: set[str] = set()
+    if index_path.exists():
+        with open(index_path) as f:
+            for line in f:
+                if line.strip():
+                    existing_ids.add(json.loads(line)["id"])
+        print(f"Loaded {len(existing_ids)} existing paper(s) from {index_path}")
+
+    print(f"Fetching {args.venue}{args.year} papers from CVF open access...")
+    papers = get_papers(args.venue, args.year)
     print(f"Found {len(papers)} paper(s).")
 
-    papers_dir.mkdir(parents=True, exist_ok=True)
-    with open(index_path, "w") as f:
-        for paper in papers:
+    if args.keywords:
+        papers = [p for p in papers if _title_matches(p.title, args.keywords)]
+        print(f"{len(papers)} paper(s) match keywords {args.keywords}.")
+
+    new_papers = [p for p in papers if p.paper_id not in existing_ids]
+    print(f"{len(new_papers)} new paper(s) to add.")
+
+    working_dir.mkdir(parents=True, exist_ok=True)
+    with open(index_path, "a") as f:
+        for paper in new_papers:
             record = {
                 "id": paper.paper_id,
                 "title": paper.title,
                 "authors": paper.authors,
+                "year": args.year,
+                "venue": args.venue,
                 "abstract_url": paper.abstract_url,
                 "pdf_url": paper.pdf_url,
             }
             f.write(json.dumps(record) + "\n")
-    print(f"Wrote metadata to {index_path}")
+    print(f"Appended {len(new_papers)} paper(s) to {index_path}")
 
     if not args.metadata_only:
-        download_pdfs(papers, papers_dir / "pdfs")
+        download_pdfs(new_papers, working_dir / "pdfs")
 
 
 if __name__ == "__main__":
