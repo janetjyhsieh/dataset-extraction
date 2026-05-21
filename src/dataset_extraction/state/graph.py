@@ -5,7 +5,7 @@ from pathlib import Path
 from tinydb import Query, TinyDB
 
 from dataset_extraction.state.nodes import DatasetNode, UsageNode
-from dataset_extraction.state.paper import Paper
+from dataset_extraction.state.paper import DatasetPaperNode
 
 
 # TODO(jy): check implementation
@@ -102,10 +102,10 @@ class UsageNodes:
         return len(self._table)
 
 
-class Papers:
-    """Persistent store for paper metadata backed by TinyDB.
+class DatasetPaperNodes:
+    """Persistent store for dataset-paper nodes backed by TinyDB.
 
-    Each entry is a :class:`PaperInfo` model keyed by ``paper_title``.
+    Each entry is a :class:`DatasetPaperNode` keyed by ``canonical_title``.
 
     Args:
         db_path: Path to the TinyDB JSON file. Created if it does not exist.
@@ -114,30 +114,33 @@ class Papers:
     def __init__(self, db_path: str | Path) -> None:
         self._db = TinyDB(db_path)
 
-    def add(self, paper: PaperInfo) -> int:
-        """Upsert a paper and return its TinyDB document ID."""
+    def add(self, paper: DatasetPaperNode) -> int:
+        """Upsert a paper node and return its TinyDB document ID."""
         Q = Query()
-        doc_id = self._db.upsert(paper.model_dump(mode="json"), Q.paper_title == paper.paper_title)
+        doc_id = self._db.upsert(
+            paper.model_dump(mode="json"),
+            Q.canonical_title == paper.canonical_title,
+        )
         return doc_id[0]
 
-    def get(self, paper_title: str) -> PaperInfo | None:
-        """Return the paper with the given title, or None if not found."""
-        results = self._db.search(Query().paper_title == paper_title)
+    def get(self, canonical_title: str) -> DatasetPaperNode | None:
+        """Return the paper node with the given canonical title, or None."""
+        results = self._db.search(Query().canonical_title == canonical_title)
         if not results:
             return None
-        return PaperInfo.model_validate(results[0])
+        return DatasetPaperNode.model_validate(results[0])
 
-    def all(self) -> list[PaperInfo]:
-        """Return all stored papers."""
-        return [PaperInfo.model_validate(doc) for doc in self._db.all()]
+    def all(self) -> list[DatasetPaperNode]:
+        """Return all stored paper nodes."""
+        return [DatasetPaperNode.model_validate(doc) for doc in self._db.all()]
 
-    def exists(self, paper_title: str) -> bool:
-        """Return True if a paper with the given title is already stored."""
-        return self._db.contains(Query().paper_title == paper_title)
+    def exists(self, canonical_title: str) -> bool:
+        """Return True if a node with the given canonical title is already stored."""
+        return self._db.contains(Query().canonical_title == canonical_title)
 
-    def remove(self, paper_title: str) -> None:
-        """Delete the paper with the given title if it exists."""
-        self._db.remove(Query().paper_title == paper_title)
+    def remove(self, canonical_title: str) -> None:
+        """Delete the node with the given canonical title if it exists."""
+        self._db.remove(Query().canonical_title == canonical_title)
 
     def __len__(self) -> int:
         return len(self._db)
