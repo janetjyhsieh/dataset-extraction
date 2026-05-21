@@ -61,7 +61,7 @@ def enqueue_from_directory(
         )
         paper_nodes.insert(node)
         queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
-        print(f"Enqueued: {title} ({venue+year})")
+        print(f"Enqueued: {title} ({record.get("venue")+str(record.get("year"))})")
         enqueued += 1
 
     print(f"\nAdded {enqueued} job(s) to queue (total: {len(queue)})")
