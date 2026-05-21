@@ -72,6 +72,6 @@ def extract_all_datasets(
                 continue
 
             for dataset in result.new_datasets:
-                nodes.add(DatasetNode(**dataset.model_dump()))
+                nodes.upsert(DatasetNode(**dataset.model_dump()))
 
             print(f"saved {len(result.new_datasets)} dataset(s)")
