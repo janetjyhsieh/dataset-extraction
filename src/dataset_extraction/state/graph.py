@@ -1,63 +1,68 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Generic, Type, TypeVar
 
+from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
 from dataset_extraction.state.nodes import DatasetNode, UsageNode
 from dataset_extraction.state.paper import DatasetPaperNode
 
+_T = TypeVar("_T", bound=BaseModel)
 
-# TODO(jy): check implementation
-class Nodes:
-    """Persistent store for dataset nodes backed by TinyDB.
 
-    Each node represents a published dataset extracted from a paper.
-    The dataset's ``name`` field is used as the natural key.
+class _NodeStore(Generic[_T]):
+    """TinyDB-backed store for a single Pydantic model type, keyed by one string field."""
 
-    Args:
-        db_path: Path to the TinyDB JSON file. Created if it does not exist.
-    """
-
-    def __init__(self, db_path: str | Path) -> None:
+    def __init__(self, db_path: str | Path, model: Type[_T], key_field: str) -> None:
         self._db = TinyDB(db_path)
+        self._model = model
+        self._key_field = key_field
 
-    def add(self, dataset: DatasetNode) -> int:
-        """Insert a dataset node and return its TinyDB document ID.
+    def _q(self, value: str):
+        return getattr(Query(), self._key_field) == value
 
-        If a node with the same name already exists it is replaced.
-
-        Args:
-            dataset: The dataset to store.
-
-        Returns:
-            The TinyDB document ID of the inserted record.
-        """
-        Q = Query()
-        doc_id = self._db.upsert(dataset.model_dump(mode="json"), Q.name == dataset.name)
+    def add(self, node: _T) -> int:
+        """Upsert a node and return its TinyDB document ID."""
+        doc_id = self._db.upsert(node.model_dump(mode="json"), self._q(getattr(node, self._key_field)))
         return doc_id[0]
 
-    def get(self, name: str) -> DatasetNode | None:
-        """Return the dataset node with the given name, or None if not found."""
-        results = self._db.search(Query().name == name)
+    def get(self, key: str) -> _T | None:
+        """Return the node with the given key, or None if not found."""
+        results = self._db.search(self._q(key))
         if not results:
             return None
-        return DatasetNode.model_validate(results[0])
+        return self._model.model_validate(results[0])
 
-    def all(self) -> list[DatasetNode]:
-        """Return all stored dataset nodes."""
-        return [DatasetNode.model_validate(doc) for doc in self._db.all()]
+    def all(self) -> list[_T]:
+        """Return all stored nodes."""
+        return [self._model.model_validate(doc) for doc in self._db.all()]
 
-    def exists(self, name: str) -> bool:
-        """Return True if a node with the given name is already stored."""
-        return self._db.contains(Query().name == name)
+    def exists(self, key: str) -> bool:
+        """Return True if a node with the given key is stored."""
+        return self._db.contains(self._q(key))
 
-    def remove(self, name: str) -> None:
-        """Delete the node with the given name if it exists."""
-        self._db.remove(Query().name == name)
+    def remove(self, key: str) -> None:
+        """Delete the node with the given key if it exists."""
+        self._db.remove(self._q(key))
 
     def __len__(self) -> int:
         return len(self._db)
+
+
+class Nodes(_NodeStore[DatasetNode]):
+    """Persistent store for dataset nodes, keyed by dataset name."""
+
+    def __init__(self, db_path: str | Path) -> None:
+        super().__init__(db_path, DatasetNode, "name")
+
+
+class DatasetPaperNodes(_NodeStore[DatasetPaperNode]):
+    """Persistent store for dataset-paper nodes, keyed by canonical title."""
+
+    def __init__(self, db_path: str | Path) -> None:
+        super().__init__(db_path, DatasetPaperNode, "canonical_title")
 
 
 class UsageNodes:
@@ -100,47 +105,3 @@ class UsageNodes:
 
     def __len__(self) -> int:
         return len(self._table)
-
-
-class DatasetPaperNodes:
-    """Persistent store for dataset-paper nodes backed by TinyDB.
-
-    Each entry is a :class:`DatasetPaperNode` keyed by ``canonical_title``.
-
-    Args:
-        db_path: Path to the TinyDB JSON file. Created if it does not exist.
-    """
-
-    def __init__(self, db_path: str | Path) -> None:
-        self._db = TinyDB(db_path)
-
-    def add(self, paper: DatasetPaperNode) -> int:
-        """Upsert a paper node and return its TinyDB document ID."""
-        Q = Query()
-        doc_id = self._db.upsert(
-            paper.model_dump(mode="json"),
-            Q.canonical_title == paper.canonical_title,
-        )
-        return doc_id[0]
-
-    def get(self, canonical_title: str) -> DatasetPaperNode | None:
-        """Return the paper node with the given canonical title, or None."""
-        results = self._db.search(Query().canonical_title == canonical_title)
-        if not results:
-            return None
-        return DatasetPaperNode.model_validate(results[0])
-
-    def all(self) -> list[DatasetPaperNode]:
-        """Return all stored paper nodes."""
-        return [DatasetPaperNode.model_validate(doc) for doc in self._db.all()]
-
-    def exists(self, canonical_title: str) -> bool:
-        """Return True if a node with the given canonical title is already stored."""
-        return self._db.contains(Query().canonical_title == canonical_title)
-
-    def remove(self, canonical_title: str) -> None:
-        """Delete the node with the given canonical title if it exists."""
-        self._db.remove(Query().canonical_title == canonical_title)
-
-    def __len__(self) -> int:
-        return len(self._db)
