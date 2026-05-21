@@ -80,7 +80,6 @@ def extract_and_save_usages(
 
 def enqueue_used_datasets(
     usages: list[UsageNode],
-    nodes: Nodes,
     paper_nodes: DatasetPaperNodes,
     queue: Queue[DatasetJob],
     working_dir: Path,
@@ -95,7 +94,7 @@ def enqueue_used_datasets(
 
         canonical = canonicalize_title(usage.source_title)
 
-        if _already_seen(canonical, nodes, queue):
+        if _already_seen(canonical, paper_nodes):
             print(f"  '{usage.source_title}' already in graph or queue")
             continue
 
@@ -133,7 +132,7 @@ def main() -> None:
     usage_nodes = UsageNodes(working_dir / "state" / "usages.json")
 
     usages = extract_and_save_usages(working_dir, client, usage_nodes)
-    enqueue_used_datasets(usages, nodes, paper_nodes, queue, working_dir)
+    enqueue_used_datasets(usages, paper_nodes, queue, working_dir)
     build(queue, client, nodes, paper_nodes, working_dir)
 
 

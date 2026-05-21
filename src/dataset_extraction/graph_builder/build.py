@@ -32,12 +32,8 @@ def extract_datasets_and_save(
     return new_dataset_nodes
 
 
-# BUG: need to call canonical 
-def _already_seen(paper_title: str, nodes: Nodes, queue: Queue[DatasetJob]) -> bool:
-    key = paper_title.strip().lower()
-    if any((node.paper_title or "").strip().lower() == key for node in nodes.all()):
-        return True
-    return any(job.title.strip().lower() == key for job in queue.all())
+def _already_seen(canonical_title: str, paper_nodes: DatasetPaperNodes) -> bool:
+    return paper_nodes.exists(canonical_title)
 
 
 def process_source_datasets(
@@ -57,7 +53,7 @@ def process_source_datasets(
         if canonical not in paper_node.source_papers:
             paper_node.source_papers.append(canonical)
 
-        if _already_seen(canonical, nodes, queue):
+        if _already_seen(canonical, paper_nodes):
             print(f"  Skipping '{paper.title}' (already seen)")
             continue
 
@@ -68,7 +64,7 @@ def process_source_datasets(
             pdf_info=PdfInfo(link_found=False, download_success=False),
         )
         pdf_path = find_and_download_pdf(source_paper_node, download_dir)
-        paper_nodes.add(source_paper_node)
+        paper_nodes.add(source_paper_node)#TODO should this happen before download?
 
         if pdf_path is None:
             print(f"  No PDF found for '{paper.title}': {source_paper_node.pdf_info.errors}")
