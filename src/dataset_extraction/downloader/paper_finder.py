@@ -122,13 +122,14 @@ def _search_cvf(dblp_key: str, year: int, title: str, verbose: bool = False) -> 
                 continue
             result_title = a_tag.get_text(strip=True)
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  CVF result: {result_title!r}, match: {match}")
             if not match:
                 continue
+            if verbose:
+                print(f"  CVF result: {result_title!r}, match: {match}")
             href = a_tag.get("href", "")
+            print(href)
             pdf_href = href.replace("/html/", "/papers/").replace(".html", ".pdf")
-            return _CVF_BASE + pdf_href
+            return _CVF_BASE + pdf_href if pdf_href.startswith("/") else _CVF_BASE + "/" + pdf_href
     except Exception as e:
         if verbose:
             print(f"  CVF error: {e}")
