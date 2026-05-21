@@ -223,3 +223,6 @@ __marimo__/
 
 # Outputs
 /out
+
+# AI code agent
+.claude
