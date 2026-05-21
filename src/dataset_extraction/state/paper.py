@@ -25,6 +25,7 @@ class PdfDownloadSource(str, Enum):
     pmlr = "pmlr"
     openreview = "openreview"
     aaai = "aaai"
+    direct = "direct"
 
 
 class PdfInfo(BaseModel):

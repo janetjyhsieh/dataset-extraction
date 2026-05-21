@@ -17,10 +17,11 @@ from typing import Union
 
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.downloader.paper_finder import download_pdf, find_open_access_pdf
+from dataset_extraction.downloader.paper_finder import find_and_download_pdf
 from dataset_extraction.graph_builder.build import _already_seen, build
-from dataset_extraction.state.graph import Nodes, UsageNodes
+from dataset_extraction.state.graph import DatasetPaperNodes, Nodes, UsageNodes
 from dataset_extraction.state.nodes import UsageNode
+from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.extractor import extract_usage
 
@@ -80,6 +81,7 @@ def extract_and_save_usages(
 def enqueue_used_datasets(
     usages: list[UsageNode],
     nodes: Nodes,
+    paper_nodes: DatasetPaperNodes,
     queue: Queue[DatasetJob],
     working_dir: Path,
 ) -> None:
@@ -91,22 +93,26 @@ def enqueue_used_datasets(
             print(f"  '{usage.dataset_name}' not in graph and has no source title, skipping")
             continue
 
-        if _already_seen(usage.source_title, nodes, queue):
+        canonical = canonicalize_title(usage.source_title)
+
+        if _already_seen(canonical, nodes, queue):
             print(f"  '{usage.source_title}' already in graph or queue")
             continue
 
         print(f"  '{usage.dataset_name}' not in graph — looking up '{usage.source_title}'...")
-        pdf_url = find_open_access_pdf(usage.source_title, usage.source_first_author or "")
-        if pdf_url is None:
-            print(f"    No PDF found for '{usage.source_title}'")
-            continue
+        node = DatasetPaperNode(
+            raw_title=usage.source_title,
+            canonical_title=canonical,
+            pdf_info=PdfInfo(link_found=False, download_success=False),
+        )
+        pdf_path = find_and_download_pdf(node, download_dir) 
+        paper_nodes.add(node)#TODO: should this happen before download?
 
-        pdf_path = download_pdf(pdf_url, usage.source_title, download_dir)
         if pdf_path is None:
-            print(f"    Failed to download '{usage.source_title}'")
+            print(f"    No PDF found for '{usage.source_title}': {node.pdf_info.errors}")
             continue
 
-        queue.enqueue(DatasetJob(title=usage.source_title, pdf_path=str(pdf_path)))
+        queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
         print(f"    Enqueued '{usage.source_title}'")
 
 
@@ -123,11 +129,12 @@ def main() -> None:
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
     nodes = Nodes(working_dir / "state" / "graph.json")
+    paper_nodes = DatasetPaperNodes(working_dir / "state" / "paper_nodes.json")
     usage_nodes = UsageNodes(working_dir / "state" / "usages.json")
 
     usages = extract_and_save_usages(working_dir, client, usage_nodes)
-    enqueue_used_datasets(usages, nodes, queue, working_dir)
-    build(queue, client, nodes, working_dir)
+    enqueue_used_datasets(usages, nodes, paper_nodes, queue, working_dir)
+    build(queue, client, nodes, paper_nodes, working_dir)
 
 
 if __name__ == "__main__":
