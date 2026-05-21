@@ -28,90 +28,89 @@ def extract_datasets_and_save(
             paper_title=job.title,
         )
         new_dataset_nodes.append(dataset_node)
-        nodes.add(dataset_node)
+        nodes.insert(dataset_node)
     return new_dataset_nodes
 
 
-def _already_seen(canonical_title: str, paper_nodes: DatasetPaperNodes) -> bool:
-    return paper_nodes.exists(canonical_title)
+def _already_seen(canonical_title: str, papers_db: DatasetPaperNodes) -> bool:
+    return papers_db.exists(canonical_title)
 
 
 def process_source_datasets(
     dataset_node: DatasetNode,
     paper_node: DatasetPaperNode,
-    nodes: DatasetNodes,
-    paper_nodes: DatasetPaperNodes,
+    papers_db: DatasetPaperNodes,
     queue: Queue[DatasetJob],
     working_dir: Path,
 ) -> None:
     download_dir = working_dir / "discovered" / "pdfs"
 
     for source in dataset_node.sources:
-        paper = source.source_paper
-        canonical = canonicalize_title(paper.title)
+        source_paper_info = source.source_paper
+        canonical_title = canonicalize_title(source_paper_info.title)
 
-        if canonical not in paper_node.source_papers:
-            paper_node.source_papers.append(canonical)
+        if canonical_title not in paper_node.source_papers_titles:
+            paper_node.source_papers_titles.append(canonical_title)
 
-        if _already_seen(canonical, paper_nodes):
-            print(f"  Skipping '{paper.title}' (already seen)")
+        if _already_seen(canonical_title, papers_db):
+            print(f"  Skipping '{source_paper_info.title}' (already seen)")
             continue
 
-        print(f"  Looking up PDF for '{paper.title}'...")
+        print(f"  Looking up PDF for '{source_paper_info.title}'...")
         source_paper_node = DatasetPaperNode(
-            raw_title=paper.title,
-            canonical_title=canonical,
+            raw_title=source_paper_info.title,
+            canonical_title=canonical_title,
             pdf_info=PdfInfo(link_found=False, download_success=False),
         )
         pdf_path = find_and_download_pdf(source_paper_node, download_dir)
-        paper_nodes.add(source_paper_node)#TODO should this happen before download?
+        papers_db.insert(source_paper_node)
 
         if pdf_path is None:
-            print(f"  No PDF found for '{paper.title}': {source_paper_node.pdf_info.errors}")
+            print(f"  No PDF found for '{source_paper_info.title}': {source_paper_node.pdf_info.errors}")
             continue
 
-        queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
-        print(f"  Enqueued '{paper.title}'")
+        queue.enqueue(DatasetJob(title=canonical_title, pdf_path=str(pdf_path)))
+        print(f"  Enqueued '{source_paper_info.title}'")
 
-    paper_nodes.add(paper_node)
+    papers_db.update(paper_node)
 
 
 def process_unprocessed_nodes(
-    nodes: DatasetNodes,
-    paper_nodes: DatasetPaperNodes,
+    nodes_db: DatasetNodes,
+    papers_db: DatasetPaperNodes,
     queue: Queue[DatasetJob],
     working_dir: Path,
 ) -> None:
     """Call process_source_datasets for every node with source_processed=False."""
-    unprocessed = [node for node in nodes.all() if not node.source_processed]
+    unprocessed = [node for node in nodes_db.all() if not node.source_processed]
     print(f"Found {len(unprocessed)} unprocessed node(s)")
     for node in unprocessed:
         print(f"Processing sources for: {node.name}")
-        paper_node = paper_nodes.get(node.paper_title or "")
+        paper_node = papers_db.get(node.paper_title or "")
         assert paper_node is not None, f"No DatasetPaperNode found for '{node.paper_title}'"
-        process_source_datasets(node, paper_node, nodes, paper_nodes, queue, working_dir)
+        process_source_datasets(node, paper_node, papers_db, queue, working_dir)
         node.source_processed = True
-        nodes.add(node)
+        nodes_db.update(node)
 
 
 def build(
     queue: Queue[DatasetJob],
     client: Client,
-    nodes: DatasetNodes,
-    paper_nodes: DatasetPaperNodes,
+    nodes_db: DatasetNodes,
+    papers_db: DatasetPaperNodes,
     working_dir: Path,
 ) -> None:
     while len(queue) > 0:
         job = queue.peek()
         print(f"Processing: {job.title}")
-        paper_node = paper_nodes.get(job.title)
+        paper_node = papers_db.get(job.title)
         assert paper_node is not None, f"No DatasetPaperNode found for '{job.title}'"
-        new_dataset_nodes = extract_datasets_and_save(job, client, nodes)
+        new_dataset_nodes = extract_datasets_and_save(job, client, nodes_db)
         queue.dequeue()
         for dataset_node in new_dataset_nodes:
-            process_source_datasets(dataset_node, paper_node, nodes, paper_nodes, queue, working_dir)
+            process_source_datasets(dataset_node, paper_node, papers_db, queue, working_dir)
             dataset_node.source_processed = True
-            nodes.add(dataset_node)
+            nodes_db.update(dataset_node)
 
 
 def main() -> None:
@@ -144,10 +143,10 @@ def main() -> None:
 
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
-    nodes = DatasetNodes(working_dir / "state" / "graph.json")
-    paper_nodes = DatasetPaperNodes(working_dir / "state" / "paper_nodes.json")
-    process_unprocessed_nodes(nodes, paper_nodes, queue, working_dir)
-    build(queue, client, nodes, paper_nodes, working_dir)
+    nodes_db = DatasetNodes(working_dir / "state" / "dataset_nodes.json")
+    papers_db = DatasetPaperNodes(working_dir / "state" / "paper_nodes.json")
+    process_unprocessed_nodes(nodes_db, papers_db, queue, working_dir) #TODO: check 
+    build(queue, client, nodes_db, papers_db, working_dir)
 
 
 if __name__ == "__main__":

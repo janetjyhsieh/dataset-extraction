@@ -56,9 +56,10 @@ def enqueue_from_directory(
                 download_success=True,
                 pdf_download_source=PdfDownloadSource.direct,
                 pdf_file_path=str(pdf_path),
+                #TODO: add url
             ),
         )
-        paper_nodes.add(node)
+        paper_nodes.insert(node)
         queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
         print(f"Enqueued: {title} (year={record.get('year')}, venue={record.get('venue')})")
         enqueued += 1

@@ -105,7 +105,7 @@ def enqueue_used_datasets(
             pdf_info=PdfInfo(link_found=False, download_success=False),
         )
         pdf_path = find_and_download_pdf(node, download_dir) 
-        paper_nodes.add(node)#TODO: should this happen before download?
+        paper_nodes.insert(node)  # TODO: should this happen before download?
 
         if pdf_path is None:
             print(f"    No PDF found for '{usage.source_title}': {node.pdf_info.errors}")
@@ -127,7 +127,7 @@ def main() -> None:
 
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
-    nodes = DatasetNodes(working_dir / "state" / "graph.json")
+    nodes = DatasetNodes(working_dir / "state" / "dataset_nodes.json")
     paper_nodes = DatasetPaperNodes(working_dir / "state" / "paper_nodes.json")
     usage_nodes = UsageNodes(working_dir / "state" / "usages.json")
 
