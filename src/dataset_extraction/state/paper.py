@@ -29,8 +29,8 @@ class PdfDownloadSource(str, Enum):
 
 
 class PdfInfo(BaseModel):
-    link_found: bool
-    download_success: bool
+    link_found: bool #TODO: default False
+    download_success: bool #TODO: default False
     url: str | None = None
     pdf_file_path: str | None = None
     pdf_download_source: PdfDownloadSource | None = None
@@ -50,9 +50,9 @@ class DatasetPaperNode(PaperInfo):
     """A paper that introduces one or more new datasets.
 
     ``datasets`` is populated after LLM extraction completes. TODO(consider identifying with uuid)
-    ``source_papers`` is populated from the source dataset citations found
+    ``source_papers_titles`` is populated from the source dataset citations found
     during extraction — these are the papers that proposed the upstream
     datasets used to construct the datasets introduced by this paper.
     """
     # datasets: list[str] = []
-    source_papers: list[str] = []
+    source_papers_titles: list[str] = []
