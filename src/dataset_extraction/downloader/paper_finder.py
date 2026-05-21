@@ -10,6 +10,8 @@ import arxiv
 import requests
 from bs4 import BeautifulSoup
 
+from dataset_extraction.state.paper import DatasetPaperNode, PdfDownloadSource
+
 _S2_SEARCH = "https://api.semanticscholar.org/graph/v1/paper/search"
 _CVF_BASE = "https://openaccess.thecvf.com"
 _CVF_VENUES = {"cvpr": "CVPR", "iccv": "ICCV", "wacv": "WACV"}
@@ -52,7 +54,11 @@ def _get_s2_paper(title: str, verbose: bool = False) -> dict | None:
     try:
         resp = _get_with_backoff(
             _S2_SEARCH,
-            params={"query": title, "fields": "title,openAccessPdf,externalIds,year", "limit": 3},
+            params={
+                "query": title,
+                "fields": "title,openAccessPdf,externalIds,year,authors,venue",
+                "limit": 3,
+            },
             timeout=15,
             verbose=verbose,
             headers=_s2_headers(),
@@ -68,6 +74,8 @@ def _get_s2_paper(title: str, verbose: bool = False) -> dict | None:
                 print(f"    externalIds: {paper.get('externalIds')}")
                 print(f"    openAccessPdf: {paper.get('openAccessPdf')}")
                 print(f"    year: {paper.get('year')}")
+                print(f"    venue: {paper.get('venue')}")
+                print(f"    authors: {[a.get('name') for a in (paper.get('authors') or [])]}")
                 print(f"    title match: {match}")
             if match:
                 return paper
@@ -376,81 +384,129 @@ def _search_arxiv(title: str, verbose: bool = False) -> str | None:
     return None
 
 
-def find_open_access_pdf(title: str, first_author: str, verbose: bool = False) -> str | None:
-    """Find an open-access PDF URL for a paper.
-
-    Three-stage lookup:
-      1. Semantic Scholar ``openAccessPdf`` field.
-      2. Venue routing from S2 metadata (ArXiv/ACL external IDs, then
-         venue-specific sources: CVF, ECVA, NeurIPS, PMLR, ACL Anthology,
-         AAAI OJS, OpenReview).
-      3. arXiv title search as final fallback.
-
-    Args:
-        title: Paper title.
-        first_author: First author name (reserved for future disambiguation).
-        verbose: Print intermediate results for debugging.
-
-    Returns:
-        URL of an open-access PDF, or None.
-    """
-    # Step 1: Semantic Scholar
-    paper = _get_s2_paper(title, verbose)
-    if paper:
-        pdf_info = paper.get("openAccessPdf")
-        if pdf_info and pdf_info.get("url"):
-            if verbose:
-                print("  Found via S2 openAccessPdf")
-            return pdf_info["url"]
-
-        external_ids = paper.get("externalIds") or {}
-        year = paper.get("year")
-
-        # Step 2: venue routing from metadata
-        result = _pdf_from_external_ids(external_ids, verbose)
-        if result:
-            return result
-
-        if year:
-            result = _pdf_from_venue(external_ids, year, title, verbose)
-            if result:
-                return result
-
-    # Step 3: arXiv title search
-    if verbose:
-        print("  Falling back to arXiv search")
-    return _search_arxiv(title, verbose)
+def _venue_source(external_ids: dict) -> PdfDownloadSource | None:
+    """Map a DBLP venue key to its PdfDownloadSource enum value."""
+    dblp_key = external_ids.get("DBLP", "")
+    venue = dblp_key.split("/")[1] if "/" in dblp_key else ""
+    mapping: dict[str, PdfDownloadSource] = {
+        "cvpr": PdfDownloadSource.cvf,
+        "iccv": PdfDownloadSource.cvf,
+        "wacv": PdfDownloadSource.cvf,
+        "eccv": PdfDownloadSource.ecva,
+        "nips": PdfDownloadSource.neurips,
+        "icml": PdfDownloadSource.pmlr,
+        "iclr": PdfDownloadSource.openreview,
+        "aaai": PdfDownloadSource.aaai,
+        **{v: PdfDownloadSource.acl for v in _ACL_VENUES},
+    }
+    return mapping.get(venue)
 
 
 def _title_to_id(title: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")[:80]
 
 
-def download_pdf(url: str, title: str, output_dir: str | Path) -> Path | None:
-    """Download a PDF from a URL and save it to output_dir.
+# BUG: the year from semantic shcolar may not be the same as the conference year.
+# For example: Deep Residual Learning for Image Recognition, year 2015
+# However, the paper was published in CVPR 2016. If use year 2015, then the 
+# Find by venue will not succeed.
+def find_and_download_pdf(
+    node: DatasetPaperNode,
+    download_dir: Path,
+    verbose: bool = False,
+) -> Path | None:
+    """Populate *node* with paper metadata and download its PDF.
 
-    Skips the download if the file already exists.
+    Searches for the paper using node.canonical_title via a three-stage lookup:
+      1. Semantic Scholar openAccessPdf field.
+      2. Venue routing from S2 metadata (ArXiv/ACL IDs, then venue-specific
+         sources: CVF, ECVA, NeurIPS, PMLR, ACL Anthology, AAAI, OpenReview).
+      3. arXiv title search as final fallback.
+
+    Populates node.authors, node.year, node.venue, and node.pdf_info in-place.
+    Errors are appended to node.pdf_info.errors. Skips the download if the
+    destination file already exists.
 
     Args:
-        url: Direct URL to the PDF.
-        title: Paper title, used to derive the output filename.
-        output_dir: Directory to save the PDF in.
+        node: The DatasetPaperNode to populate. Must have canonical_title set.
+        download_dir: Directory to save the downloaded PDF.
+        verbose: Print intermediate lookup results for debugging.
 
     Returns:
-        Path of the saved PDF, or None if the download failed.
+        Local Path of the downloaded PDF, or None on failure.
     """
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    download_dir = Path(download_dir)
+    download_dir.mkdir(parents=True, exist_ok=True)
+    title = node.canonical_title
 
-    dest = output_dir / f"{_title_to_id(title)}.pdf"
+    pdf_url: str | None = None
+    pdf_source: PdfDownloadSource | None = None
+
+    # Stage 1 & 2: Semantic Scholar
+    s2_paper = _get_s2_paper(title, verbose)
+    if s2_paper:
+        node.year = s2_paper.get("year")
+        node.venue = s2_paper.get("venue") or None
+        node.authors = [a["name"] for a in (s2_paper.get("authors") or []) if a.get("name")]
+
+        s2_pdf = s2_paper.get("openAccessPdf")
+        if s2_pdf and s2_pdf.get("url"):
+            pdf_url = s2_pdf["url"]
+            pdf_source = PdfDownloadSource.semantic_scholar
+            if verbose:
+                print("  Found via S2 openAccessPdf")
+
+        if pdf_url is None:
+            external_ids = s2_paper.get("externalIds") or {}
+            year = s2_paper.get("year")
+
+            result = _pdf_from_external_ids(external_ids, verbose)
+            if result:
+                pdf_url = result
+                pdf_source = (
+                    PdfDownloadSource.arxiv if external_ids.get("ArXiv")
+                    else PdfDownloadSource.acl
+                )
+
+            if pdf_url is None and year:
+                result = _pdf_from_venue(external_ids, year, title, verbose)
+                if result:
+                    pdf_url = result
+                    pdf_source = _venue_source(external_ids)
+
+    # Stage 3: arXiv fallback
+    if pdf_url is None:
+        if verbose:
+            print("  Falling back to arXiv search")
+        result = _search_arxiv(title, verbose)
+        if result:
+            pdf_url = result
+            pdf_source = PdfDownloadSource.arxiv
+
+    node.pdf_info.link_found = pdf_url is not None
+    node.pdf_info.url = pdf_url
+    node.pdf_info.pdf_download_source = pdf_source
+
+    if pdf_url is None:
+        node.pdf_info.errors.append("No open-access PDF found")
+        node.pdf_info.download_success = False
+        return None
+
+    # Download
+    dest = download_dir / f"{_title_to_id(title)}.pdf"
     if dest.exists():
+        node.pdf_info.pdf_file_path = str(dest)
+        node.pdf_info.download_success = True
         return dest
 
     try:
-        resp = requests.get(url, timeout=60)
+        resp = requests.get(pdf_url, timeout=60)
         resp.raise_for_status()
         dest.write_bytes(resp.content)
+        node.pdf_info.pdf_file_path = str(dest)
+        node.pdf_info.download_success = True
         return dest
     except Exception as e:
-        print(f"Warning: failed to download PDF from {url}: {e}")
+        node.pdf_info.errors.append(f"Failed to download PDF from {pdf_url}: {e}")
+        node.pdf_info.download_success = False
         return None
