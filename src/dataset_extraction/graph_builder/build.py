@@ -86,7 +86,10 @@ def process_unprocessed_nodes(
     print(f"Found {len(unprocessed)} unprocessed node(s)")
     for node in unprocessed:
         print(f"Processing sources for: {node.name}")
-        paper_node = papers_db.get(node.paper_title or "")
+        if node.paper_title is None:
+            print(f"  Skipping '{node.name}' (no paper_title)")
+            continue
+        paper_node = papers_db.get(node.paper_title)
         assert paper_node is not None, f"No DatasetPaperNode found for '{node.paper_title}'"
         process_source_datasets(node, paper_node, papers_db, queue, working_dir)
         node.source_processed = True
