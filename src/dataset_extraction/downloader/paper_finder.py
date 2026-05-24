@@ -412,7 +412,7 @@ def _title_to_id(title: str) -> str:
 # However, the paper was published in CVPR 2016. If use year 2015, then the 
 # Find by venue will not succeed.
 def find_and_download_pdf(
-    node: DatasetPaperNode,
+    node: PaperInfo,
     download_dir: Path,
     verbose: bool = False,
 ) -> Path | None:

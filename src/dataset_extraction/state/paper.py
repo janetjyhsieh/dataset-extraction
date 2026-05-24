@@ -38,8 +38,8 @@ class PdfInfo(BaseModel):
 
 
 class PaperInfo(BaseModel):
-    raw_title: str
     canonical_title: str
+    raw_title: str | None = None
     authors: list[str] | None = None
     year: int | None = None
     venue: str | None = None
@@ -54,5 +54,7 @@ class DatasetPaperNode(BaseModel):
     during extraction — these are the papers that proposed the upstream
     datasets used to construct the datasets introduced by this paper.
     """
+    title: str
     datasets: list[str] = []
     source_papers_titles: list[str] = []
+    source_processed: bool = False

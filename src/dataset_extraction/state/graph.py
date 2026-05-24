@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
 from dataset_extraction.state.nodes import DatasetNode, UsageNode
-from dataset_extraction.state.paper import DatasetPaperNode
+from dataset_extraction.state.paper import DatasetPaperNode, PaperInfo
 
 _T = TypeVar("_T", bound=BaseModel)
 
@@ -87,13 +87,13 @@ class DatasetPaperNodes(_NodeStore[DatasetPaperNode]):
     """Persistent store for dataset-paper nodes, keyed by canonical title."""
 
     def __init__(self, db_path: str | Path) -> None:
-        super().__init__(db_path, DatasetPaperNode, "canonical_title")
+        super().__init__(db_path, DatasetPaperNode, "title")
 
-class PaperInfoNodes(_NodeStore[PaperInfoNode]):
+class PaperInfoNodes(_NodeStore[PaperInfo]):
     """Persistent store for paper-info nodes, keyed by canonical title."""
 
     def __init__(self, db_path: str | Path) -> None:
-        super().__init__(db_path, PaperInfoNode, "canonical_title")
+        super().__init__(db_path, PaperInfo, "canonical_title")
 
 class UsageNodes:
     """Persistent store for dataset usage nodes backed by TinyDB.

@@ -2,8 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
-from dataset_extraction.state.graph import DatasetPaperNodes
-from dataset_extraction.state.paper import DatasetPaperNode, canonicalize_title
+from dataset_extraction.state.graph import PaperInfoNodes
+from dataset_extraction.state.paper import PaperInfo, canonicalize_title
 from dataset_extraction.state.paper import PdfInfo, PdfDownloadSource
 from dataset_extraction.state.queue import DatasetJob, Queue
 
@@ -11,9 +11,9 @@ from dataset_extraction.state.queue import DatasetJob, Queue
 def enqueue_from_directory(
     working_dir: str | Path,
     queue: Queue[DatasetJob],
-    paper_nodes: DatasetPaperNodes,
+    paper_info_db: PaperInfoNodes,
 ) -> None:
-    """Create a DatasetPaperNode and enqueue a job for every PDF in ``working_dir/pdfs/``.
+    """Create a PaperInfoNodes and enqueue a job for every PDF in ``working_dir/pdfs/``.
 
     Titles are resolved from ``working_dir/index.jsonl`` when available,
     falling back to the PDF filename stem.
@@ -22,7 +22,7 @@ def enqueue_from_directory(
         working_dir: Conference paper directory containing ``pdfs/`` and
             optionally ``index.jsonl``.
         queue: The queue to add jobs to.
-        paper_nodes: Store where a DatasetPaperNode is saved for each paper
+        paper_info_nodes: Store where a PaperInfoNodes is saved for each paper
             before its job is enqueued.
     """
     working_dir = Path(working_dir)
@@ -46,7 +46,7 @@ def enqueue_from_directory(
 
         title = record["title"]
         canonical = canonicalize_title(title)
-        node = DatasetPaperNode(
+        node = PaperInfo(
             raw_title=title,
             canonical_title=canonical,
             year=record.get("year"),
@@ -59,7 +59,7 @@ def enqueue_from_directory(
                 url=record.get("url")
             ),
         )
-        paper_nodes.insert(node)
+        paper_info_db.insert(node)
         queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
         print(f"Enqueued: {title} ({record.get("venue")+str(record.get("year"))})")
         enqueued += 1
@@ -80,10 +80,10 @@ def main() -> None:
 
     working_dir = Path(args.working_dir)
     queue_path = working_dir / "state" / "dataset_queue.jsonl"
-    paper_nodes_path = working_dir / "state" / "paper_nodes.json"
+    paper_nodes_path = working_dir / "state" / "paper_info_nodes.json"
     queue: Queue[DatasetJob] = Queue(DatasetJob, queue_path)
-    paper_nodes = DatasetPaperNodes(paper_nodes_path)
-    enqueue_from_directory(working_dir, queue, paper_nodes)
+    paper_info_db = PaperInfoNodes(paper_nodes_path)
+    enqueue_from_directory(working_dir, queue, paper_info_db)
 
 
 if __name__ == "__main__":
