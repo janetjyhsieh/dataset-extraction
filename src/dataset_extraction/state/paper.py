@@ -46,13 +46,13 @@ class PaperInfo(BaseModel):
     pdf_info: PdfInfo
 
 
-class DatasetPaperNode(PaperInfo):
+class DatasetPaperNode(BaseModel):
     """A paper that introduces one or more new datasets.
 
-    ``datasets`` is populated after LLM extraction completes. TODO(consider identifying with uuid)
+    ``datasets`` is populated after LLM extraction completes.
     ``source_papers_titles`` is populated from the source dataset citations found
     during extraction — these are the papers that proposed the upstream
     datasets used to construct the datasets introduced by this paper.
     """
-    # datasets: list[str] = []
+    datasets: list[str] = []
     source_papers_titles: list[str] = []

@@ -89,6 +89,11 @@ class DatasetPaperNodes(_NodeStore[DatasetPaperNode]):
     def __init__(self, db_path: str | Path) -> None:
         super().__init__(db_path, DatasetPaperNode, "canonical_title")
 
+class PaperInfoNodes(_NodeStore[PaperInfoNode]):
+    """Persistent store for paper-info nodes, keyed by canonical title."""
+
+    def __init__(self, db_path: str | Path) -> None:
+        super().__init__(db_path, PaperInfoNode, "canonical_title")
 
 class UsageNodes:
     """Persistent store for dataset usage nodes backed by TinyDB.
