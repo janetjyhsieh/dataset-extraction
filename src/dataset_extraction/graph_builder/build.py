@@ -3,15 +3,17 @@ from pathlib import Path
 from typing import Union
 
 from dataset_extraction.clients.claude import ClaudeClient
+from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.dataset.extractor import extract_datasets
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
-from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes
+from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes
 from dataset_extraction.state.nodes import DatasetNode
-from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, canonicalize_title
+from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, PaperInfo 
+from dataset_extraction.state.paper import canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 
-Client = Union[ClaudeClient, OpenAIClient]
+Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
 
 
 def extract_datasets_and_save(
@@ -62,39 +64,34 @@ def process_source_datasets(
             continue
 
         print(f"  Looking up PDF for '{source_title}'...")
-        source_paper_info_node = PaperInfo(
+        source_paper_info = PaperInfo(
             canonical_title=source_title,
             pdf_info=PdfInfo(link_found=False, download_success=False),
         )
-        pdf_path = find_and_download_pdf(source_paper_info_node, download_dir)
-        paper_info_db.insert(source_paper_info_node)
+        pdf_path = find_and_download_pdf(source_paper_info, download_dir)
+        paper_info_db.insert(source_paper_info)
 
         if pdf_path is None:
-            print(f"  No PDF found for '{source_paper_info.title}': {source_paper_info.pdf_info.errors}")
+            print(f"  No PDF found for '{source_paper_info.canonical_title}': {source_paper_info.pdf_info.errors}")
             continue
 
         queue.enqueue(DatasetJob(title=source_title, pdf_path=str(pdf_path)))
-        print(f"  Enqueued '{source_paper_info.title}'")
+        print(f"  Enqueued '{source_paper_info.canonical_title}'")
 
-# def process_unprocessed_nodes(
-#     nodes_db: DatasetNodes,
-#     papers_db: DatasetPaperNodes,
-#     queue: Queue[DatasetJob],
-#     working_dir: Path,
-# ) -> None:
-#     """Call process_source_datasets for every node with source_processed=False."""
-#     unprocessed = [node for node in nodes_db.all() if not node.source_processed]
-#     print(f"Found {len(unprocessed)} unprocessed node(s)")
-#     for node in unprocessed:
-#         print(f"Processing sources for: {node.name}")
-#         if node.paper_title is None:
-#             print(f"  Skipping '{node.name}' (no paper_title)")
-#             continue
-#         paper_node = papers_db.get(node.paper_title)
-#         assert paper_node is not None, f"No DatasetPaperNode found for '{node.paper_title}'"
-#         process_source_datasets(node, paper_node, papers_db, queue, working_dir)
-#         node.source_processed = True
-#         nodes_db.update(node)
+def process_unprocessed_nodes(
+    dataset_paper_db: DatasetPaperNodes,
+    paper_info_db: PaperInfoNodes,
+    queue: Queue[DatasetJob],
+    working_dir: Path,
+) -> None:
+    """Call process_source_datasets for every node with source_processed=False."""
+    unprocessed = [dp for dp in dataset_paper_db.all() if not dp.source_processed]
+    print(f"Found {len(unprocessed)} unprocessed node(s)")
+    for dataset_paper in unprocessed:
+        print(f"Processing sources for: {dataset_paper.title}")
+        process_source_datasets(dataset_paper, paper_info_db, queue, working_dir)
+        dataset_paper.source_processed = True
+        dataset_paper_db.update(dataset_paper)
 
 
 def build(
@@ -109,12 +106,15 @@ def build(
         job = queue.peek()
         print(f"Processing: {job.title}")
         new_dataset_nodes = extract_datasets_and_save(job, client, dataset_db)
-        dataset_paper = create_and_save_dataset_paper(job.title, new_dataset_nodes, dataset_paper_db)
-        queue.dequeue()
-        for source_title in dataset_paper.source_papers_titles:
-            process_source_datasets(dataset_paper, paper_info_db, queue, working_dir)
-        dataset_papper.source_processed = True
-        dataset_paper_db.update(dataset_papper)
+        if len(new_dataset_nodes) > 0:
+            dataset_paper = create_and_save_dataset_paper(job.title, new_dataset_nodes, dataset_paper_db)
+            queue.dequeue()
+            for source_title in dataset_paper.source_papers_titles:
+                process_source_datasets(dataset_paper, paper_info_db, queue, working_dir)
+            dataset_paper.source_processed = True
+            dataset_paper_db.update(dataset_paper)
+        else:
+            queue.dequeue()
 
 
 def main() -> None:
@@ -128,7 +128,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--provider",
-        choices=["claude", "openai"],
+        choices=["claude", "openai", "foundry"],
         default="claude",
         help="LLM provider (default: claude)",
     )
@@ -142,15 +142,17 @@ def main() -> None:
     kwargs = {} if args.model is None else {"model": args.model}
     if args.provider == "claude":
         client = ClaudeClient(**kwargs)
-    else:
+    elif args.provider == "openai":
         client = OpenAIClient(**kwargs)
+    else:
+        client = FoundryClient(**kwargs)
 
     working_dir = Path(args.working_dir)
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
     dataset_db = DatasetNodes(working_dir / "state" / "dataset_nodes.json")
-    paper_info_db = DatasetPaperNodes(working_dir / "state" / "paper_info_nodes.json")
+    paper_info_db = PaperInfoNodes(working_dir / "state" / "paper_info_nodes.json")
     dataset_paper_db = DatasetPaperNodes(working_dir / "state" / "dataset_paper_nodes.json")
-    # process_unprocessed_nodes(dataset_paper_db, dataset_db, paper_info_db, queue, working_dir) #TODO: check 
+    process_unprocessed_nodes(dataset_paper_db, paper_info_db, queue, working_dir) #TODO: check 
     build(queue, client, dataset_paper_db, dataset_db, paper_info_db, working_dir)
 
 
