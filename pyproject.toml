@@ -10,6 +10,8 @@ dependencies = [
     "openai",
     "pydantic",
     "tinydb",
+    "networkx",
+    "pyvis",
     "requests",
     "beautifulsoup4",
 ]

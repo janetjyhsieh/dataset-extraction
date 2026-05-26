@@ -1,15 +1,14 @@
-// Controls for the dataset provenance graph.
-// Expects these globals set by the inline data script before this file runs:
-//   nodeComponents, nodeDetails, compSizes, numComps, totalNodes
-// Expects vis-network globals: nodes, edges, network
+// Controls for the dataset lineage graph.
+// Globals injected by render.py before this script runs:
+//   nodeComponents  — {nodeId: componentIndex}
+//   nodeDetails     — {nodeId: {datasets, year, venue, source_processed}}
+//   compSizes       — [size, ...]
+//   numComps        — number of weakly-connected components
+//   totalNodes      — total node count
 
 (function () {
   var compButtons = document.getElementById('comp-buttons');
   var toggleBtn = document.getElementById('controls-toggle');
-
-  // Tracks which edge IDs are hidden by the component filter so that
-  // highlight/restore can correctly compose with the filter state.
-  var hiddenByFilter = new Set();
 
   // --- Component toggle buttons ---
 
@@ -35,8 +34,6 @@
   });
 
   function filterByComponent(compIdx) {
-    hiddenByFilter.clear();
-
     var nodeUpdate = [];
     nodes.forEach(function (node) {
       nodeUpdate.push({
@@ -52,7 +49,6 @@
         compIdx !== 'all' &&
         (nodeComponents[edge.from] !== parseInt(compIdx) ||
           nodeComponents[edge.to] !== parseInt(compIdx));
-      if (hide) hiddenByFilter.add(edge.id);
       edgeUpdate.push({ id: edge.id, hidden: hide });
     });
     edges.update(edgeUpdate);
@@ -77,15 +73,11 @@
     filterByComponent(btn.dataset.comp);
   });
 
-  // --- Subgraph highlight ---
+  // --- Subgraph highlight on click ---
 
   function buildAdjacency() {
-    var children = {};
-    var parents = {};
-    nodes.forEach(function (n) {
-      children[n.id] = [];
-      parents[n.id] = [];
-    });
+    var children = {}, parents = {};
+    nodes.forEach(function (n) { children[n.id] = []; parents[n.id] = []; });
     edges.forEach(function (e) {
       if (children[e.from]) children[e.from].push(e.to);
       if (parents[e.to]) parents[e.to].push(e.from);
@@ -94,15 +86,11 @@
   }
 
   function bfs(startId, getNeighbors) {
-    var visited = new Set();
-    var queue = [startId];
+    var visited = new Set(), queue = [startId];
     while (queue.length > 0) {
       var cur = queue.shift();
       (getNeighbors(cur) || []).forEach(function (nb) {
-        if (!visited.has(nb)) {
-          visited.add(nb);
-          queue.push(nb);
-        }
+        if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
       });
     }
     return visited;
@@ -118,35 +106,26 @@
 
     var highlightedEdges = new Set();
     edges.forEach(function (e) {
-      if (highlighted.has(e.from) && highlighted.has(e.to)) {
-        highlightedEdges.add(e.id);
-      }
+      if (highlighted.has(e.from) && highlighted.has(e.to)) highlightedEdges.add(e.id);
     });
 
-    var nodeUpdate = [];
-    nodes.forEach(function (n) {
-      nodeUpdate.push({ id: n.id, opacity: highlighted.has(n.id) ? 1 : 0.1 });
-    });
-    nodes.update(nodeUpdate);
+    nodes.update(Array.from(highlighted).map(function (id) { return { id: id, opacity: 1 }; })
+      .concat(
+        nodes.get().filter(function (n) { return !highlighted.has(n.id); })
+          .map(function (n) { return { id: n.id, opacity: 0.1 }; })
+      ));
 
-    var edgeUpdate = [];
-    edges.forEach(function (e) {
-      edgeUpdate.push({ id: e.id, opacity: highlightedEdges.has(e.id) ? 1 : 0 });
-    });
-    edges.update(edgeUpdate);
+    edges.update(edges.get().map(function (e) {
+      return { id: e.id, opacity: highlightedEdges.has(e.id) ? 1 : 0 };
+    }));
   }
 
   function restoreAll() {
-    var nodeUpdate = [];
-    nodes.forEach(function (n) { nodeUpdate.push({ id: n.id, opacity: 1 }); });
-    nodes.update(nodeUpdate);
-
-    var edgeUpdate = [];
-    edges.forEach(function (e) { edgeUpdate.push({ id: e.id, opacity: 1 }); });
-    edges.update(edgeUpdate);
+    nodes.update(nodes.get().map(function (n) { return { id: n.id, opacity: 1 }; }));
+    edges.update(edges.get().map(function (e) { return { id: e.id, opacity: 1 }; }));
   }
 
-  // --- Click handler ---
+  // --- Click handler: show detail panel ---
 
   network.on('click', function (params) {
     var panel = document.getElementById('detail-panel');
@@ -162,24 +141,37 @@
     highlightSubgraph(nodeId);
 
     var det = nodeDetails[nodeId] || {};
-    var names = det.dataset_names || [];
-    var html =
-      '<h4><span>' +
-      nodeId +
-      '</span><button class="detail-close" title="Close">&#x2715;</button></h4>';
-    if (det.known) {
-      html += '<b>Datasets proposed (' + names.length + '):</b><ul>';
-      names.forEach(function (n) { html += '<li>' + n + '</li>'; });
-      html += '</ul>';
-    } else if (det.usage_only) {
-      html +=
-        '<em style="color:#888">Usage-only paper — appears in usage data but not in the provenance graph.</em>';
-    } else {
-      html +=
-        '<em style="color:#888">External reference — datasets not extracted from this paper.</em>';
+    var datasets = det.datasets || [];
+    var year = det.year;
+    var venue = det.venue || '';
+    var sourcePending = det.source_processed === false && datasets.length > 0;
+
+    var metaParts = [];
+    if (venue) metaParts.push(venue);
+    if (year) metaParts.push(year);
+
+    var html = '<h4><span>' + nodeId + '</span>'
+      + '<button class="detail-close" title="Close">&#x2715;</button></h4>';
+
+    if (metaParts.length > 0) {
+      html += '<div class="detail-meta">' + metaParts.join(' · ') + '</div>';
     }
+
+    if (datasets.length > 0) {
+      html += '<b>Datasets introduced (' + datasets.length + '):</b><ul>';
+      datasets.forEach(function (d) { html += '<li>' + d + '</li>'; });
+      html += '</ul>';
+    } else {
+      html += '<em style="color:#888">Referenced paper — datasets not extracted yet.</em>';
+    }
+
+    if (sourcePending) {
+      html += '<p style="color:#e8a838;font-size:12px;margin-top:8px;">&#9888; Source papers not yet discovered.</p>';
+    }
+
     content.innerHTML = html;
     panel.style.display = 'block';
+
     content.querySelector('.detail-close').addEventListener('click', function () {
       panel.style.display = 'none';
       restoreAll();

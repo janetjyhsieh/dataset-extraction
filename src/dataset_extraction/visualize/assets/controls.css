@@ -28,9 +28,7 @@
     justify-content: center;
 }
 
-#comp-buttons.collapsed {
-    display: none;
-}
+#comp-buttons.collapsed { display: none; }
 
 #controls-toggle {
     background: none;
@@ -115,4 +113,10 @@
     margin: 6px 0 0 0;
     padding-left: 18px;
     line-height: 1.7;
+}
+
+.detail-meta {
+    color: #aaa;
+    font-size: 12px;
+    margin-bottom: 8px;
 }
