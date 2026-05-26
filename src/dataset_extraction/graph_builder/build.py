@@ -12,6 +12,7 @@ from dataset_extraction.state.nodes import DatasetNode
 from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, PaperInfo 
 from dataset_extraction.state.paper import canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
+from dataset_extraction.graph_builder.populate_queue import enqueue_from_directory
 
 Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
 
@@ -152,6 +153,7 @@ def main() -> None:
     dataset_db = DatasetNodes(working_dir / "state" / "dataset_nodes.json")
     paper_info_db = PaperInfoNodes(working_dir / "state" / "paper_info_nodes.json")
     dataset_paper_db = DatasetPaperNodes(working_dir / "state" / "dataset_paper_nodes.json")
+    enqueue_from_directory(working_dir, queue, paper_info_db)
     process_unprocessed_nodes(dataset_paper_db, paper_info_db, queue, working_dir) #TODO: check 
     build(queue, client, dataset_paper_db, dataset_db, paper_info_db, working_dir)
 

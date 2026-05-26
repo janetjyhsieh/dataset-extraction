@@ -46,7 +46,9 @@ def enqueue_from_directory(
 
         title = record["title"]
         canonical = canonicalize_title(title)
-        node = PaperInfo(
+        if paper_info_db.exists(canonical):
+            continue
+        paper = PaperInfo(
             raw_title=title,
             canonical_title=canonical,
             year=record.get("year"),
@@ -59,7 +61,7 @@ def enqueue_from_directory(
                 url=record.get("url")
             ),
         )
-        paper_info_db.insert(node)
+        paper_info_db.insert(paper)
         queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
         print(f"Enqueued: {title} ({record.get("venue")+str(record.get("year"))})")
         enqueued += 1
