@@ -1,0 +1,118 @@
+.vis-tooltip {
+    white-space: pre-line !important;
+    font-family: Arial, sans-serif !important;
+    line-height: 1.5 !important;
+}
+
+#component-controls {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(28,28,28,0.93);
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    max-width: 90vw;
+}
+
+#comp-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#comp-buttons.collapsed {
+    display: none;
+}
+
+#controls-toggle {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    line-height: 1;
+    letter-spacing: 0.03em;
+}
+
+#controls-toggle:hover { color: #ddd; }
+
+.comp-btn {
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #333;
+    color: #ddd;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    transition: background 0.15s;
+}
+
+.comp-btn:hover { background: #444; }
+
+.comp-btn.active {
+    background: #4e9af1;
+    border-color: #4e9af1;
+    color: white;
+}
+
+#detail-panel {
+    position: fixed;
+    top: 60px;
+    right: 24px;
+    width: 280px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    background: rgba(28,28,28,0.93);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: #ddd;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    z-index: 9999;
+    display: none;
+    box-sizing: border-box;
+}
+
+#detail-panel h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #fff;
+    border-bottom: 1px solid #555;
+    padding-bottom: 7px;
+    word-break: break-word;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.detail-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.detail-close:hover { color: #ddd; }
+
+#detail-panel ul {
+    margin: 6px 0 0 0;
+    padding-left: 18px;
+    line-height: 1.7;
+}
