@@ -114,8 +114,13 @@ def render(G: nx.DiGraph, output_path: str | Path) -> Path:
         net.add_node(paper, label=label, title="\n".join(tooltip_lines),
                      size=size, color=color, font={"size": 12})
 
-    for src, dst in G.edges():
-        net.add_edge(src, dst)
+    for src, dst, data in G.edges(data=True):
+        source_datasets = data.get("source_datasets", [])
+        if source_datasets:
+            tooltip = "Source datasets used:\n" + "\n".join(f"  • {d}" for d in source_datasets)
+        else:
+            tooltip = None
+        net.add_edge(src, dst, title=tooltip)
 
     net.save_graph(str(output_path))
 

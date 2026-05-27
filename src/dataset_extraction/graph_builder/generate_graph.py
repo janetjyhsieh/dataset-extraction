@@ -14,7 +14,8 @@ from pathlib import Path
 
 import networkx as nx
 
-from dataset_extraction.state.graph import DatasetPaperNodes, PaperInfoNodes
+from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes
+from dataset_extraction.state.paper import canonicalize_title
 
 
 def build_lineage_graph(working_dir: Path) -> nx.DiGraph:
@@ -28,18 +29,24 @@ def build_lineage_graph(working_dir: Path) -> nx.DiGraph:
         year (int | None): publication year from PaperInfo
         venue (str | None): publication venue from PaperInfo
 
+    Edge attributes:
+        source_datasets (list[str]): names of the source paper's datasets that
+            the derived paper drew from
+
     Args:
-        working_dir: Directory containing state/dataset_paper_nodes.json and
-            state/paper_info_nodes.json
+        working_dir: Directory containing state/dataset_paper_nodes.json,
+            state/dataset_nodes.json, and state/paper_info_nodes.json
 
     Returns:
         A directed networkx graph.
     """
     state_dir = Path(working_dir) / "state"
     dataset_paper_db = DatasetPaperNodes(state_dir / "dataset_paper_nodes.json")
+    dataset_db = DatasetNodes(state_dir / "dataset_nodes.json")
     paper_info_db = PaperInfoNodes(state_dir / "paper_info_nodes.json")
 
     info_by_title = {p.canonical_title: p for p in paper_info_db.all()}
+    dataset_by_name = {d.name: d for d in dataset_db.all()}
 
     G = nx.DiGraph()
 
@@ -65,7 +72,18 @@ def build_lineage_graph(working_dir: Path) -> nx.DiGraph:
                     year=info.year if info else None,
                     venue=info.venue if info else None,
                 )
-            G.add_edge(source_title, paper.title)
+
+            # Collect which of the source paper's datasets are cited by this paper's datasets.
+            source_datasets: list[str] = []
+            for dataset_name in paper.datasets:
+                node = dataset_by_name.get(dataset_name)
+                if node is None:
+                    continue
+                for src in node.sources:
+                    if canonicalize_title(src.source_paper.title) == source_title:
+                        source_datasets.append(src.source_dataset_name)
+
+            G.add_edge(source_title, paper.title, source_datasets=source_datasets)
 
     return G
 
