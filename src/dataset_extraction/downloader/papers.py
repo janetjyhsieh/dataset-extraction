@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import openreview
+
+logger = logging.getLogger(__name__)
 
 
 def _get_keywords(note: openreview.Note) -> list[str]:
@@ -50,7 +53,7 @@ def get_notes(
     notes = client.get_all_notes(content={"venueid": venue})
 
     if not keywords:
-        print("returning all notes")
+        logger.debug("No keywords filter — returning all notes")
         return notes
 
     return [note for note in notes if _note_matches(note, keywords)]

@@ -10,12 +10,16 @@ Usage:
 
 import argparse
 import json
+import logging
 from pathlib import Path
 
 import networkx as nx
 
+from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes
 from dataset_extraction.state.paper import canonicalize_title
+
+logger = logging.getLogger("dataset_extraction.graph_builder.generate_graph")
 
 
 def build_lineage_graph(working_dir: Path) -> nx.DiGraph:
@@ -122,20 +126,21 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
+    setup_logging(working_dir / "logs")
     G = build_lineage_graph(working_dir)
 
-    print(f"Nodes : {G.number_of_nodes()}")
-    print(f"Edges : {G.number_of_edges()}")
+    logger.info("Nodes : %d", G.number_of_nodes())
+    logger.info("Edges : %d", G.number_of_edges())
 
     roots = sorted(n for n in G.nodes if G.in_degree(n) == 0)
-    print(f"Roots (no upstream sources): {len(roots)}")
+    logger.info("Roots (no upstream sources): %d", len(roots))
     for r in roots:
         datasets = G.nodes[r].get("datasets", [])
-        print(f"  {r!r}  →  {datasets}")
+        logger.info("  %r  →  %s", r, datasets)
 
     out = working_dir / "graph.json"
     _save_graph(G, out)
-    print(f"Saved to {out}")
+    logger.info("Saved to %s", out)
 
 
 if __name__ == "__main__":

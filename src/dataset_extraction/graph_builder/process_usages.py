@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import json
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -20,11 +21,14 @@ from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
 from dataset_extraction.graph_builder.build import _already_seen, build
+from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes, UsageNodes
 from dataset_extraction.state.nodes import UsageNode
 from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, PaperInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.extractor import extract_usage
+
+logger = logging.getLogger("dataset_extraction.graph_builder.process_usages")
 
 Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
 
@@ -53,28 +57,28 @@ def extract_and_save_usages(
     """
     title_map = _load_title_map(working_dir)
     pdfs = sorted((working_dir / "pdfs").glob("*.pdf"))
-    print(f"Found {len(pdfs)} PDF(s) under {working_dir}/pdfs")
+    logger.info("Found %d PDF(s) under %s/pdfs", len(pdfs), working_dir)
 
     for pdf in pdfs:
         paper_id = pdf.stem
         paper_title = title_map.get(paper_id, paper_id)
 
         if usage_nodes.is_processed(paper_title):
-            print(f"  Skipping {pdf.name} (already processed)")
+            logger.debug("Skipping %s (already processed)", pdf.name)
             continue
 
-        print(f"  Extracting usages from {pdf.name} ...", end=" ", flush=True)
+        logger.info("Extracting usages from %s", pdf.name)
         try:
             _, result = extract_usage(pdf, client)
-        except Exception as exc:
-            print(f"FAILED ({exc})")
+        except Exception:
+            logger.exception("Extraction failed for %s", pdf.name)
             continue
 
         for usage in result.dataset_usages:
             usage_nodes.add(UsageNode(**usage.model_dump(), paper_title=paper_title))
         usage_nodes.mark_processed(paper_title)
 
-        print(f"{len(result.dataset_usages)} usage(s)")
+        logger.info("Saved %d usage(s) from %s", len(result.dataset_usages), pdf.name)
 
     return usage_nodes.all()
 
@@ -90,16 +94,16 @@ def enqueue_used_datasets(
 
     for usage in usages:
         if not usage.source_title:
-            print(f"  '{usage.dataset_name}' not in graph and has no source title, skipping")
+            logger.debug("'%s' has no source title, skipping", usage.dataset_name)
             continue
 
         canonical = canonicalize_title(usage.source_title)
 
         if _already_seen(canonical, paper_info_db):
-            print(f"  '{usage.source_title}' already in graph or queue")
+            logger.debug("'%s' already in graph or queue", usage.source_title)
             continue
 
-        print(f"  '{usage.dataset_name}' not in graph — looking up '{usage.source_title}'...")
+        logger.info("'%s' not in graph — looking up '%s'", usage.dataset_name, usage.source_title)
         usage_paper_info = PaperInfo(
             raw_title=usage.source_title,
             canonical_title=canonical,
@@ -109,11 +113,11 @@ def enqueue_used_datasets(
         paper_info_db.insert(usage_paper_info)  # TODO: should this block be reused?
 
         if pdf_path is None:
-            print(f"    No PDF found for '{usage.source_title}': {usage_paper_info.pdf_info.errors}")
+            logger.warning("No PDF found for '%s': %s", usage.source_title, usage_paper_info.pdf_info.errors)
             continue
 
         queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
-        print(f"    Enqueued '{usage.source_title}'")
+        logger.info("Enqueued '%s'", usage.source_title)
 
 
 def main() -> None:
@@ -132,6 +136,7 @@ def main() -> None:
         client = FoundryClient(**kwargs)
 
     working_dir = Path(args.working_dir)
+    setup_logging(working_dir / "logs")
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
     dataset_db = DatasetNodes(working_dir / "state" / "dataset_nodes.json")
     paper_info_db = PaperInfoNodes(working_dir / "state" / "paper_info_nodes.json")

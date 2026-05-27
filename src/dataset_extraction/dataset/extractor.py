@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -11,6 +12,8 @@ from dataset_extraction.state.nodes import DatasetNode
 
 from .datasets import ExtractionResult
 from .prompts import DATASET_PROMPT
+
+logger = logging.getLogger(__name__)
 
 Client = Union[ClaudeClient, OpenAIClient]
 
@@ -52,26 +55,26 @@ def extract_all_datasets(
         nodes: The ``DatasetNodes`` store where extracted datasets will be saved.
     """
     pdfs = sorted(Path(papers_path).glob("pdfs/*.pdf"))
-    print(f"Found {len(pdfs)} PDF(s) under {papers_path}/pdfs")
+    logger.info("Found %d PDF(s) under %s/pdfs", len(pdfs), papers_path)
 
     out_path = Path(papers_path) / "out" / "extraction_results.jsonl"
 
     with out_path.open("a") as out_file:
         for pdf in pdfs:
-            print(f"Processing {pdf.name} ...", end=" ", flush=True)
+            logger.info("Processing %s", pdf.name)
             try:
                 result = extract_datasets(pdf, client)
-            except Exception as exc:
-                print(f"FAILED ({exc})")
+            except Exception:
+                logger.exception("Extraction failed for %s", pdf.name)
                 continue
 
             out_file.write(result.model_dump_json() + "\n")
 
             if not result.publishes_new_dataset:
-                print("no new dataset")
+                logger.debug("%s: no new dataset", pdf.name)
                 continue
 
             for dataset in result.new_datasets:
                 nodes.upsert(DatasetNode(**dataset.model_dump()))
 
-            print(f"saved {len(result.new_datasets)} dataset(s)")
+            logger.info("Saved %d dataset(s) from %s", len(result.new_datasets), pdf.name)

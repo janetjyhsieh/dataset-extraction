@@ -1,6 +1,7 @@
 """
 TODO: make sure the paper finding (ExternalIDs, venue-based) rules are in the desired order.
 """
+import logging
 import os
 import re
 import time
@@ -11,6 +12,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from dataset_extraction.state.paper import DatasetPaperNode, PdfDownloadSource
+
+logger = logging.getLogger(__name__)
 
 _S2_SEARCH = "https://api.semanticscholar.org/graph/v1/paper/search"
 _CVF_BASE = "https://openaccess.thecvf.com"
@@ -35,21 +38,20 @@ def _titles_match(query: str, result: str, threshold: float = 0.7) -> bool:
     return len(q_words & r_words) / len(q_words) >= threshold
 
 
-def _get_with_backoff(url: str, params: dict, timeout: int, verbose: bool, headers: dict | None = None) -> requests.Response:
+def _get_with_backoff(url: str, params: dict, timeout: int, headers: dict | None = None) -> requests.Response:
     delay = 5
     for attempt in range(4):
         resp = requests.get(url, params=params, headers=headers, timeout=timeout)
         if resp.status_code != 429:
             return resp
         retry_after = int(resp.headers.get("Retry-After", delay))
-        if verbose:
-            print(f"  429 rate limited — retrying in {retry_after}s (attempt {attempt + 1}/4)")
+        logger.warning("429 rate limited — retrying in %ds (attempt %d/4)", retry_after, attempt + 1)
         time.sleep(retry_after)
         delay *= 2
     return resp
 
 
-def _get_s2_paper(title: str, verbose: bool = False) -> dict | None:
+def _get_s2_paper(title: str) -> dict | None:
     """Search S2 for a paper by title, return the best matching paper dict."""
     try:
         resp = _get_with_backoff(
@@ -60,59 +62,49 @@ def _get_s2_paper(title: str, verbose: bool = False) -> dict | None:
                 "limit": 3,
             },
             timeout=15,
-            verbose=verbose,
             headers=_s2_headers(),
         )
-        if verbose:
-            print(f"  S2 status: {resp.status_code}")
+        logger.debug("S2 status: %d", resp.status_code)
         resp.raise_for_status()
         for paper in resp.json().get("data", []):
             result_title = paper.get("title", "")
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  S2 result: {result_title!r}")
-                print(f"    externalIds: {paper.get('externalIds')}")
-                print(f"    openAccessPdf: {paper.get('openAccessPdf')}")
-                print(f"    year: {paper.get('year')}")
-                print(f"    venue: {paper.get('venue')}")
-                print(f"    authors: {[a.get('name') for a in (paper.get('authors') or [])]}")
-                print(f"    title match: {match}")
+            logger.debug("S2 result: %r", result_title)
+            logger.debug("  externalIds: %s", paper.get("externalIds"))
+            logger.debug("  openAccessPdf: %s", paper.get("openAccessPdf"))
+            logger.debug("  year: %s  venue: %s  title match: %s", paper.get("year"), paper.get("venue"), match)
             if match:
                 return paper
-    except Exception as e:
-        if verbose:
-            print(f"  S2 error: {e}")
+    except Exception:
+        logger.debug("S2 error for %r", title, exc_info=True)
     return None
 
 
-def _pdf_from_external_ids(external_ids: dict, verbose: bool = False) -> str | None:
+def _pdf_from_external_ids(external_ids: dict) -> str | None:
     """Return a direct PDF URL from known external IDs (ArXiv, ACL)."""
     arxiv_id = external_ids.get("ArXiv")
     if arxiv_id:
         url = f"https://arxiv.org/pdf/{arxiv_id}"
-        if verbose:
-            print(f"  Found ArXiv ID: {arxiv_id} → {url}")
+        logger.debug("Found ArXiv ID: %s → %s", arxiv_id, url)
         return url
 
     acl_id = external_ids.get("ACL")
     if acl_id:
         url = f"https://aclanthology.org/{acl_id}.pdf"
-        if verbose:
-            print(f"  Found ACL ID: {acl_id} → {url}")
+        logger.debug("Found ACL ID: %s → %s", acl_id, url)
         return url
 
     return None
 
 
-def _search_cvf(dblp_key: str, year: int, title: str, verbose: bool = False) -> str | None:
+def _search_cvf(dblp_key: str, year: int, title: str) -> str | None:
     venue_key = dblp_key.split("/")[1]
     venue = _CVF_VENUES.get(venue_key)
     if not venue:
         return None
     try:
         url = f"{_CVF_BASE}/{venue}{year}?day=all"
-        if verbose:
-            print(f"  CVF fetching: {url}")
+        logger.debug("CVF fetching: %s", url)
         resp = requests.get(url, timeout=30)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -124,23 +116,20 @@ def _search_cvf(dblp_key: str, year: int, title: str, verbose: bool = False) -> 
             match = _titles_match(title, result_title)
             if not match:
                 continue
-            if verbose:
-                print(f"  CVF result: {result_title!r}, match: {match}")
+            logger.debug("CVF result: %r, match: %s", result_title, match)
             href = a_tag.get("href", "")
-            print(href)
+            logger.debug("CVF href: %s", href)
             pdf_href = href.replace("/html/", "/papers/").replace(".html", ".pdf")
             return _CVF_BASE + pdf_href if pdf_href.startswith("/") else _CVF_BASE + "/" + pdf_href
-    except Exception as e:
-        if verbose:
-            print(f"  CVF error: {e}")
+    except Exception:
+        logger.debug("CVF error for %r", title, exc_info=True)
     return None
 
 
-def _search_ecva(year: int, title: str, verbose: bool = False) -> str | None:
+def _search_ecva(year: int, title: str) -> str | None:
     try:
         url = "https://www.ecva.net/papers.php"
-        if verbose:
-            print(f"  ECVA fetching: {url}")
+        logger.debug("ECVA fetching: %s", url)
         resp = requests.get(url, timeout=60)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -154,8 +143,7 @@ def _search_ecva(year: int, title: str, verbose: bool = False) -> str | None:
                 continue
             result_title = a_tag.get_text(strip=True)
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  ECVA result: {result_title!r}, match: {match}")
+            logger.debug("ECVA result: %r, match: %s", result_title, match)
             if not match:
                 continue
             dd = dt.find_next_sibling("dd")
@@ -166,26 +154,21 @@ def _search_ecva(year: int, title: str, verbose: bool = False) -> str | None:
                     return pdf_href if pdf_href.startswith("http") else "https://www.ecva.net" + pdf_href
             pdf_href = href.replace("/html/", "/papers/").replace(".html", ".pdf")
             return "https://www.ecva.net" + pdf_href
-    except Exception as e:
-        if verbose:
-            print(f"  ECVA error: {e}")
+    except Exception:
+        logger.debug("ECVA error for %r", title, exc_info=True)
     return None
 
 
-def _search_neurips(year: int, title: str, verbose: bool = False) -> str | None:
+def _search_neurips(year: int, title: str) -> str | None:
     try:
         url = f"https://papers.nips.cc/paper_files/paper/{year}"
-        if verbose:
-            print(f"  NeurIPS fetching: {url}")
+        logger.debug("NeurIPS fetching: %s", url)
         resp = requests.get(url, timeout=60)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         for a_tag in soup.find_all("a", href=lambda h: h and "/hash/" in h):
             result_title = a_tag.get_text(strip=True)
             match = _titles_match(title, result_title)
-            if verbose:
-                pass
-                # print(f"  NeurIPS result: {result_title!r}, match: {match}")
             if not match:
                 continue
             href = a_tag.get("href")
@@ -193,21 +176,19 @@ def _search_neurips(year: int, title: str, verbose: bool = False) -> str | None:
             # → /paper_files/paper/2023/file/xxx-Paper-Conference.pdf
             pdf_href = re.sub(r"/hash/(.+?)-Abstract(.*?)\.html$", r"/file/\1-Paper\2.pdf", href)
             return "https://papers.nips.cc" + pdf_href
-    except Exception as e:
-        if verbose:
-            print(f"  NeurIPS error: {e}")
+    except Exception:
+        logger.debug("NeurIPS error for %r", title, exc_info=True)
     return None
 
 
-def _search_pmlr(title: str, verbose: bool = False) -> str | None:
+def _search_pmlr(title: str) -> str | None:
     try:
         resp = requests.get(
             "https://proceedings.mlr.press/search",
             params={"query": title},
             timeout=15,
         )
-        if verbose:
-            print(f"  PMLR status: {resp.status_code}")
+        logger.debug("PMLR status: %d", resp.status_code)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         for div in soup.select("div.paper"):
@@ -216,28 +197,25 @@ def _search_pmlr(title: str, verbose: bool = False) -> str | None:
                 continue
             result_title = title_tag.get_text(strip=True)
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  PMLR result: {result_title!r}, match: {match}")
+            logger.debug("PMLR result: %r, match: %s", result_title, match)
             if not match:
                 continue
             pdf_link = div.find("a", string=re.compile(r"download pdf", re.I))
             if pdf_link:
                 return pdf_link.get("href")
-    except Exception as e:
-        if verbose:
-            print(f"  PMLR error: {e}")
+    except Exception:
+        logger.debug("PMLR error for %r", title, exc_info=True)
     return None
 
 
-def _search_acl_anthology(title: str, verbose: bool = False) -> str | None:
+def _search_acl_anthology(title: str) -> str | None:
     try:
         resp = requests.get(
             "https://aclanthology.org/search/",
             params={"q": title},
             timeout=15,
         )
-        if verbose:
-            print(f"  ACL Anthology status: {resp.status_code}")
+        logger.debug("ACL Anthology status: %d", resp.status_code)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         for item in soup.select("li.list-group-item"):
@@ -246,27 +224,24 @@ def _search_acl_anthology(title: str, verbose: bool = False) -> str | None:
                 continue
             result_title = a_tag.get_text(strip=True)
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  ACL result: {result_title!r}, match: {match}")
+            logger.debug("ACL result: %r, match: %s", result_title, match)
             if not match:
                 continue
             acl_id = a_tag.get("href", "").strip("/")
             return f"https://aclanthology.org/{acl_id}.pdf"
-    except Exception as e:
-        if verbose:
-            print(f"  ACL Anthology error: {e}")
+    except Exception:
+        logger.debug("ACL Anthology error for %r", title, exc_info=True)
     return None
 
 
-def _search_aaai(year: int, title: str, verbose: bool = False) -> str | None:
+def _search_aaai(year: int, title: str) -> str | None:
     try:
         resp = requests.get(
             "https://ojs.aaai.org/index.php/AAAI/search/search",
             params={"searchInitiated": "1", "query": title, "searchField": "title"},
             timeout=15,
         )
-        if verbose:
-            print(f"  AAAI status: {resp.status_code}")
+        logger.debug("AAAI status: %d", resp.status_code)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         for article in soup.select("li.obj_article_summary"):
@@ -276,26 +251,23 @@ def _search_aaai(year: int, title: str, verbose: bool = False) -> str | None:
                 continue
             result_title = a_tag.get_text(strip=True)
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  AAAI result: {result_title!r}, match: {match}")
+            logger.debug("AAAI result: %r, match: %s", result_title, match)
             if not match:
                 continue
             return a_tag.get("href", "").rstrip("/") + "/pdf"
-    except Exception as e:
-        if verbose:
-            print(f"  AAAI error: {e}")
+    except Exception:
+        logger.debug("AAAI error for %r", title, exc_info=True)
     return None
 
 
-def _search_openreview(title: str, verbose: bool = False) -> str | None:
+def _search_openreview(title: str) -> str | None:
     try:
         resp = requests.get(
             "https://api2.openreview.net/notes",
             params={"content.title": title, "limit": 3},
             timeout=15,
         )
-        if verbose:
-            print(f"  OpenReview status: {resp.status_code}")
+        logger.debug("OpenReview status: %d", resp.status_code)
         resp.raise_for_status()
         for note in resp.json().get("notes", []):
             content = note.get("content", {})
@@ -303,17 +275,15 @@ def _search_openreview(title: str, verbose: bool = False) -> str | None:
             if isinstance(result_title, dict):
                 result_title = result_title.get("value", "")
             match = _titles_match(title, result_title)
-            if verbose:
-                print(f"  OpenReview result: {result_title!r}, match: {match}")
+            logger.debug("OpenReview result: %r, match: %s", result_title, match)
             if match:
                 return f"https://openreview.net/pdf?id={note['id']}"
-    except Exception as e:
-        if verbose:
-            print(f"  OpenReview error: {e}")
+    except Exception:
+        logger.debug("OpenReview error for %r", title, exc_info=True)
     return None
 
 
-def _pdf_from_venue(external_ids: dict, year: int, title: str, verbose: bool = False) -> str | None:
+def _pdf_from_venue(external_ids: dict, year: int, title: str) -> str | None:
     """Route to a venue-specific open-access source based on the DBLP key."""
     dblp_key = external_ids.get("DBLP")
     if not dblp_key:
@@ -324,46 +294,38 @@ def _pdf_from_venue(external_ids: dict, year: int, title: str, verbose: bool = F
         return None
 
     if venue in _CVF_VENUES:
-        if verbose:
-            print(f"  Routing to CVF ({venue.upper()}{year})")
-        return _search_cvf(dblp_key, year, title, verbose)
+        logger.debug("Routing to CVF (%s%d)", venue.upper(), year)
+        return _search_cvf(dblp_key, year, title)
 
     if venue == "eccv":
-        if verbose:
-            print(f"  Routing to ECVA (ECCV{year})")
-        return _search_ecva(year, title, verbose)
+        logger.debug("Routing to ECVA (ECCV%d)", year)
+        return _search_ecva(year, title)
 
     if venue == "nips":
-        if verbose:
-            print(f"  Routing to NeurIPS proceedings ({year})")
-        return _search_neurips(year, title, verbose)
+        logger.debug("Routing to NeurIPS proceedings (%d)", year)
+        return _search_neurips(year, title)
 
     if venue == "icml":
-        if verbose:
-            print(f"  Routing to PMLR (ICML{year})")
-        return _search_pmlr(title, verbose)
+        logger.debug("Routing to PMLR (ICML%d)", year)
+        return _search_pmlr(title)
 
     if venue == "iclr":
-        if verbose:
-            print("  Routing to OpenReview (ICLR)")
-        return _search_openreview(title, verbose)
+        logger.debug("Routing to OpenReview (ICLR)")
+        return _search_openreview(title)
 
     if venue in _ACL_VENUES:
-        if verbose:
-            print(f"  Routing to ACL Anthology ({venue.upper()})")
-        return _search_acl_anthology(title, verbose)
+        logger.debug("Routing to ACL Anthology (%s)", venue.upper())
+        return _search_acl_anthology(title)
 
     if venue == "aaai":
-        if verbose:
-            print(f"  Routing to AAAI OJS ({year})")
-        return _search_aaai(year, title, verbose)
+        logger.debug("Routing to AAAI OJS (%d)", year)
+        return _search_aaai(year, title)
 
-    if verbose:
-        print(f"  No open-access handler for venue '{venue}'")
+    logger.debug("No open-access handler for venue '%s'", venue)
     return None
 
 
-def _search_arxiv(title: str, verbose: bool = False) -> str | None:
+def _search_arxiv(title: str) -> str | None:
     try:
         client = arxiv.Client()
         results = client.results(arxiv.Search(
@@ -373,15 +335,11 @@ def _search_arxiv(title: str, verbose: bool = False) -> str | None:
         ))
         for paper in results:
             match = _titles_match(title, paper.title)
-            if verbose:
-                print(f"  arXiv result: {paper.title!r}")
-                print(f"    id: {paper.entry_id}")
-                print(f"    title match: {match}")
+            logger.debug("arXiv result: %r  id: %s  match: %s", paper.title, paper.entry_id, match)
             if match:
                 return paper.pdf_url
-    except Exception as e:
-        if verbose:
-            print(f"  arXiv error: {e}")
+    except Exception:
+        logger.debug("arXiv error for %r", title, exc_info=True)
     return None
 
 
@@ -414,7 +372,6 @@ def _title_to_id(title: str) -> str:
 def find_and_download_pdf(
     node: PaperInfo,
     download_dir: Path,
-    verbose: bool = False,
 ) -> Path | None:
     """Populate *node* with paper metadata and download its PDF.
 
@@ -431,7 +388,6 @@ def find_and_download_pdf(
     Args:
         node: The DatasetPaperNode to populate. Must have canonical_title set.
         download_dir: Directory to save the downloaded PDF.
-        verbose: Print intermediate lookup results for debugging.
 
     Returns:
         Local Path of the downloaded PDF, or None on failure.
@@ -444,7 +400,7 @@ def find_and_download_pdf(
     pdf_source: PdfDownloadSource | None = None
 
     # Stage 1 & 2: Semantic Scholar
-    s2_paper = _get_s2_paper(title, verbose)
+    s2_paper = _get_s2_paper(title)
     if s2_paper:
         node.year = s2_paper.get("year")
         node.venue = s2_paper.get("venue") or None
@@ -454,14 +410,13 @@ def find_and_download_pdf(
         if s2_pdf and s2_pdf.get("url"):
             pdf_url = s2_pdf["url"]
             pdf_source = PdfDownloadSource.semantic_scholar
-            if verbose:
-                print("  Found via S2 openAccessPdf")
+            logger.debug("Found via S2 openAccessPdf")
 
         if pdf_url is None:
             external_ids = s2_paper.get("externalIds") or {}
             year = s2_paper.get("year")
 
-            result = _pdf_from_external_ids(external_ids, verbose)
+            result = _pdf_from_external_ids(external_ids)
             if result:
                 pdf_url = result
                 pdf_source = (
@@ -470,16 +425,15 @@ def find_and_download_pdf(
                 )
 
             if pdf_url is None and year:
-                result = _pdf_from_venue(external_ids, year, title, verbose)
+                result = _pdf_from_venue(external_ids, year, title)
                 if result:
                     pdf_url = result
                     pdf_source = _venue_source(external_ids)
 
     # Stage 3: arXiv fallback
     if pdf_url is None:
-        if verbose:
-            print("  Falling back to arXiv search")
-        result = _search_arxiv(title, verbose)
+        logger.debug("Falling back to arXiv search for %r", title)
+        result = _search_arxiv(title)
         if result:
             pdf_url = result
             pdf_source = PdfDownloadSource.arxiv

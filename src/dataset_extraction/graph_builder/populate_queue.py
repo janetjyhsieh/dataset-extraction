@@ -1,11 +1,15 @@
 import argparse
 import json
+import logging
 from pathlib import Path
 
+from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import PaperInfoNodes
 from dataset_extraction.state.paper import PaperInfo, canonicalize_title
 from dataset_extraction.state.paper import PdfInfo, PdfDownloadSource
 from dataset_extraction.state.queue import DatasetJob, Queue
+
+logger = logging.getLogger("dataset_extraction.graph_builder.populate_queue")
 
 
 def enqueue_from_directory(
@@ -41,7 +45,7 @@ def enqueue_from_directory(
     for paper_id, record in records_by_id.items():
         pdf_path = pdf_dir / f"{paper_id}.pdf"
         if not pdf_path.exists():
-            print(f"Skipping {paper_id}: PDF not found")
+            logger.warning("Skipping %s: PDF not found", paper_id)
             continue
 
         title = record["title"]
@@ -63,10 +67,10 @@ def enqueue_from_directory(
         )
         paper_info_db.insert(paper)
         queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
-        print(f"Enqueued: {title} ({record.get("venue")+str(record.get("year"))})")
+        logger.info("Enqueued: %s (%s%s)", title, record.get("venue"), record.get("year"))
         enqueued += 1
 
-    print(f"\nAdded {enqueued} job(s) to queue (total: {len(queue)})")
+    logger.info("Added %d job(s) to queue (total: %d)", enqueued, len(queue))
 
 
 def main() -> None:
@@ -81,6 +85,7 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
+    setup_logging(working_dir / "logs")
     queue_path = working_dir / "state" / "dataset_queue.jsonl"
     paper_nodes_path = working_dir / "state" / "paper_info_nodes.json"
     queue: Queue[DatasetJob] = Queue(DatasetJob, queue_path)

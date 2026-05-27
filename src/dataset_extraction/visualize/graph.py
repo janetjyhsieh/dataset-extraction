@@ -8,10 +8,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 
 from dataset_extraction.graph_builder.generate_graph import build_lineage_graph
+from dataset_extraction.log import setup_logging
 from dataset_extraction.visualize.render import render
+
+logger = logging.getLogger("dataset_extraction.visualize.graph")
 
 
 def visualize(working_dir: str | Path, output_path: str | Path | None = None) -> Path:
@@ -38,8 +42,9 @@ def main() -> None:
     parser.add_argument("--output", default=None, help="Output HTML path (default: working_dir/graph.html)")
     args = parser.parse_args()
 
+    setup_logging(Path(args.working_dir) / "logs")
     output = visualize(args.working_dir, args.output)
-    print(f"Graph written to {output}")
+    logger.info("Graph written to %s", output)
 
 
 if __name__ == "__main__":

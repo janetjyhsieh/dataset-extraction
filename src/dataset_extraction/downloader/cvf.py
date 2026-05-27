@@ -10,12 +10,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+from dataset_extraction.log import setup_logging
+
+logger = logging.getLogger("dataset_extraction.downloader.cvf")
 
 CVF_BASE = "https://openaccess.thecvf.com"
 
@@ -124,12 +129,12 @@ def download_pdfs(papers: list[CvfPaper], output_dir: str | Path) -> list[Path]:
     n = len(papers)
     paths = []
     for i, paper in enumerate(papers, start=1):
-        print(f"Downloading {i}/{n}: {paper.paper_id}")
+        logger.info("Downloading %d/%d: %s", i, n, paper.paper_id)
         try:
             path = download_pdf(paper, output_dir)
             paths.append(path)
-        except Exception as e:
-            print(f"Warning: failed to download {paper.paper_id}: {e}")
+        except Exception:
+            logger.warning("Failed to download %s", paper.paper_id, exc_info=True)
     return paths
 
 
@@ -172,6 +177,7 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
+    setup_logging(working_dir / "logs")
     index_path = working_dir / "index.jsonl"
 
     existing_ids: set[str] = set()
@@ -180,18 +186,18 @@ def main() -> None:
             for line in f:
                 if line.strip():
                     existing_ids.add(json.loads(line)["id"])
-        print(f"Loaded {len(existing_ids)} existing paper(s) from {index_path}")
+        logger.info("Loaded %d existing paper(s) from %s", len(existing_ids), index_path)
 
-    print(f"Fetching {args.venue}{args.year} papers from CVF open access...")
+    logger.info("Fetching %s%d papers from CVF open access...", args.venue, args.year)
     papers = get_papers(args.venue, args.year)
-    print(f"Found {len(papers)} paper(s).")
+    logger.info("Found %d paper(s).", len(papers))
 
     if args.keywords:
         papers = [p for p in papers if _title_matches(p.title, args.keywords)]
-        print(f"{len(papers)} paper(s) match keywords {args.keywords}.")
+        logger.info("%d paper(s) match keywords %s.", len(papers), args.keywords)
 
     new_papers = [p for p in papers if p.paper_id not in existing_ids]
-    print(f"{len(new_papers)} new paper(s) to add.")
+    logger.info("%d new paper(s) to add.", len(new_papers))
 
     working_dir.mkdir(parents=True, exist_ok=True)
     with open(index_path, "a") as f:
@@ -206,7 +212,7 @@ def main() -> None:
                 "pdf_url": paper.pdf_url,
             }
             f.write(json.dumps(record) + "\n")
-    print(f"Appended {len(new_papers)} paper(s) to {index_path}")
+    logger.info("Appended %d paper(s) to %s", len(new_papers), index_path)
 
     if not args.metadata_only:
         download_pdfs(new_papers, working_dir / "pdfs")

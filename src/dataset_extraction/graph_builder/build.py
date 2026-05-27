@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -7,12 +8,15 @@ from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.dataset.extractor import extract_datasets
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
+from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes
 from dataset_extraction.state.nodes import DatasetNode
-from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, PaperInfo 
+from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, PaperInfo
 from dataset_extraction.state.paper import canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.graph_builder.populate_queue import enqueue_from_directory
+
+logger = logging.getLogger("dataset_extraction.graph_builder.build")
 
 Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
 
@@ -61,10 +65,10 @@ def process_source_datasets(
 
     for source_title in dataset_paper.source_papers_titles:
         if _already_seen(source_title, paper_info_db):
-            print(f"  Skipping '{source_title}' (already seen)")
+            logger.debug("Skipping '%s' (already seen)", source_title)
             continue
 
-        print(f"  Looking up PDF for '{source_title}'...")
+        logger.info("Looking up PDF for '%s'", source_title)
         source_paper_info = PaperInfo(
             canonical_title=source_title,
             pdf_info=PdfInfo(link_found=False, download_success=False),
@@ -73,11 +77,11 @@ def process_source_datasets(
         paper_info_db.insert(source_paper_info)
 
         if pdf_path is None:
-            print(f"  No PDF found for '{source_paper_info.canonical_title}': {source_paper_info.pdf_info.errors}")
+            logger.warning("No PDF found for '%s': %s", source_paper_info.canonical_title, source_paper_info.pdf_info.errors)
             continue
 
         queue.enqueue(DatasetJob(title=source_title, pdf_path=str(pdf_path)))
-        print(f"  Enqueued '{source_paper_info.canonical_title}'")
+        logger.info("Enqueued '%s'", source_paper_info.canonical_title)
 
 def process_unprocessed_nodes(
     dataset_paper_db: DatasetPaperNodes,
@@ -87,9 +91,9 @@ def process_unprocessed_nodes(
 ) -> None:
     """Call process_source_datasets for every node with source_processed=False."""
     unprocessed = [dp for dp in dataset_paper_db.all() if not dp.source_processed]
-    print(f"Found {len(unprocessed)} unprocessed node(s)")
+    logger.info("Found %d unprocessed node(s)", len(unprocessed))
     for dataset_paper in unprocessed:
-        print(f"Processing sources for: {dataset_paper.title}")
+        logger.info("Processing sources for: %s", dataset_paper.title)
         process_source_datasets(dataset_paper, paper_info_db, queue, working_dir)
         dataset_paper.source_processed = True
         dataset_paper_db.update(dataset_paper)
@@ -105,7 +109,7 @@ def build(
 ) -> None:
     while len(queue) > 0:
         job = queue.peek()
-        print(f"Processing: {job.title}")
+        logger.info("Processing: %s", job.title)
         new_dataset_nodes = extract_datasets_and_save(job, client, dataset_db)
         if len(new_dataset_nodes) > 0:
             dataset_paper = create_and_save_dataset_paper(job.title, new_dataset_nodes, dataset_paper_db)
@@ -149,6 +153,7 @@ def main() -> None:
         client = FoundryClient(**kwargs)
 
     working_dir = Path(args.working_dir)
+    setup_logging(working_dir / "logs")
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "state" / "dataset_queue.jsonl")
     dataset_db = DatasetNodes(working_dir / "state" / "dataset_nodes.json")
     paper_info_db = PaperInfoNodes(working_dir / "state" / "paper_info_nodes.json")

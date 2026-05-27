@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
 import openreview
+
+logger = logging.getLogger(__name__)
 
 
 def download_pdf(
@@ -48,10 +51,10 @@ def download_pdfs(
     n = len(notes)
     paths = []
     for i, note in enumerate(notes, start=1):
-        print(f"Downloading {i}/{n}: {note.id}")
+        logger.info("Downloading %d/%d: %s", i, n, note.id)
         try:
             path = download_pdf(client, note, output_dir)
             paths.append(path)
-        except Exception as e:
-            print(f"Warning: failed to download {note.id}: {e}")
+        except Exception:
+            logger.warning("Failed to download %s", note.id, exc_info=True)
     return paths

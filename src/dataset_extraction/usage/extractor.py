@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -9,6 +10,8 @@ from dataset_extraction.clients.openai import OpenAIClient
 
 from .usages import UsageExtractionResult
 from .prompts import USAGE_PROMPT
+
+logger = logging.getLogger(__name__)
 
 Client = Union[ClaudeClient, OpenAIClient]
 
@@ -56,7 +59,7 @@ def extract_all_usages(
         client: An instantiated ``ClaudeClient`` or ``OpenAIClient``.
     """
     pdfs = sorted(Path(papers_path).glob("pdfs/*.pdf"))
-    print(f"Found {len(pdfs)} PDF(s) under {papers_path}/pdfs")
+    logger.info("Found %d PDF(s) under %s/pdfs", len(pdfs), papers_path)
 
     out_dir = Path("out/usages_extraction")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -65,11 +68,11 @@ def extract_all_usages(
     with jsonl_path.open("a") as jsonl_file:
         for pdf in pdfs:
             paper_id = pdf.stem
-            print(f"Processing {pdf.name} ...", end=" ", flush=True)
+            logger.info("Processing %s", pdf.name)
             try:
                 thinking, result = extract_usage(pdf, client)
-            except Exception as exc:
-                print(f"FAILED ({exc})")
+            except Exception:
+                logger.exception("Extraction failed for %s", pdf.name)
                 continue
 
             record = {"paper_id": paper_id} | result.model_dump(mode="json")
@@ -79,4 +82,4 @@ def extract_all_usages(
                 (out_dir / f"{paper_id}_thinking.txt").write_text(thinking, encoding="utf-8")
 
             thinking_note = " + thinking" if thinking else ""
-            print(f"saved {len(result.dataset_usages)} usage(s){thinking_note}")
+            logger.info("Saved %d usage(s) from %s%s", len(result.dataset_usages), pdf.name, thinking_note)
