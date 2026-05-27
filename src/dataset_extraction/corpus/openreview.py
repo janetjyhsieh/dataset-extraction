@@ -2,8 +2,8 @@
 
 Run as a module to download metadata and PDFs::
 
-    python -m dataset_extraction.downloader.openreview --venue NeurIPS.cc/2023/Conference
-    python -m dataset_extraction.downloader.openreview --venue NeurIPS.cc/2023/Conference --metadata-only --keywords fairness bias
+    python -m dataset_extraction.corpus.openreview --venue NeurIPS.cc/2023/Conference
+    python -m dataset_extraction.corpus.openreview --venue NeurIPS.cc/2023/Conference --metadata-only --keywords fairness bias
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import openreview
 
 from dataset_extraction.log import setup_logging
 
-logger = logging.getLogger("dataset_extraction.downloader.openreview")
+logger = logging.getLogger("dataset_extraction.corpus.openreview")
 
 
 @dataclass
