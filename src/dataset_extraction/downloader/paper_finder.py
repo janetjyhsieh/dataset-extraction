@@ -111,7 +111,7 @@ def find_and_download_pdf(
 
         if s2_paper.open_access_pdf:
             pdf_url = s2_paper.open_access_pdf
-            pdf_source = PdfDownloadSource.semantic_scholar
+            pdf_source = PdfDownloadSource.s2_open_access_pdf
             logger.debug("Found via S2 openAccessPdf")
 
         if pdf_url is None:
@@ -120,11 +120,11 @@ def find_and_download_pdf(
                 pdf_url = result
                 ids = s2_paper.external_ids
                 if ids.get("ArXiv"):
-                    pdf_source = PdfDownloadSource.arxiv
+                    pdf_source = PdfDownloadSource.s2_arxiv
                 elif ids.get("ACL"):
-                    pdf_source = PdfDownloadSource.acl
+                    pdf_source = PdfDownloadSource.s2_acl
                 elif ids.get("PubMedCentral"):
-                    pdf_source = PdfDownloadSource.pubmedcentral
+                    pdf_source = PdfDownloadSource.s2_pubmedcentral
 
             venue_year = _venue_year_from_dblp(s2_paper.external_ids.get("DBLP", "")) or s2_paper.year
             if pdf_url is None and venue_year:

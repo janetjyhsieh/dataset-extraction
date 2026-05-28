@@ -16,16 +16,18 @@ def canonicalize_title(title: str) -> str:
 
 
 class PdfDownloadSource(str, Enum):
-    semantic_scholar = "semantic_scholar"
+    s2_open_access_pdf = "semantic_scholar.openAccessPdf"
+    s2_arxiv = "semantic_scholar.external_ids.arxiv"
+    s2_acl = "semantic_scholar.external_ids.acl"
+    s2_pubmedcentral = "semantic_scholar.external_ids.pubmedcentral"
+    venue_cvf = "venue.cvf"
+    venue_ecva = "venue.ecva"
+    venue_neurips = "venue.neurips"
+    venue_pmlr = "venue.pmlr"
+    venue_openreview = "venue.openreview"
+    venue_aaai = "venue.aaai"
+    venue_acl = "venue.acl"
     arxiv = "arxiv"
-    acl = "acl"
-    cvf = "cvf"
-    ecva = "ecva"
-    neurips = "neurips"
-    pmlr = "pmlr"
-    openreview = "openreview"
-    aaai = "aaai"
-    pubmedcentral = "pubmedcentral"
     direct = "direct"
 
 

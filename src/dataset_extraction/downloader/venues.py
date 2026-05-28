@@ -14,12 +14,8 @@ _CVF_VENUES = {"cvpr": "CVPR", "iccv": "ICCV", "wacv": "WACV"}
 _ACL_VENUES = {"acl", "emnlp", "naacl", "eacl", "coling"}
 
 
-def _cvf_search_page(url: str, title: str) -> str | None:
-    """Fetch one CVF listing page and return the PDF URL if the paper is found."""
-    logger.debug("CVF fetching: %s", url)
-    resp = requests.get(url, timeout=30)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
+def _cvf_find_in_soup(soup: BeautifulSoup, title: str) -> str | None:
+    """Search a parsed CVF listing page for a paper by title, return PDF URL or None."""
     for dt in soup.find_all("dt", class_="ptitle"):
         a_tag = dt.find("a")
         if not a_tag:
@@ -41,19 +37,34 @@ def search_cvf(dblp_key: str, year: int, title: str) -> str | None:
     if not venue:
         return None
     try:
-        if year > 2020:
-            return _cvf_search_page(f"{_CVF_BASE}/{venue}{year}?day=all", title)
-
-        # For ≤ 2020, day=all is empty; find per-day links from the landing page.
-        resp = requests.get(f"{_CVF_BASE}/{venue}{year}", timeout=30)
+        base_url = f"{_CVF_BASE}/{venue}{year}"
+        logger.debug("CVF fetching base: %s", base_url)
+        resp = requests.get(base_url, timeout=30)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
+
+        # Flat structure: papers listed directly on base page (CVPR ≤2017, WACV ≤2025, etc.)
+        if soup.find("dt", class_="ptitle"):
+            return _cvf_find_in_soup(soup, title)
+
+        # Day-based structure: try ?day=all first (CVPR 2018+, ICCV 2019+, WACV 2026+)
+        logger.debug("CVF fetching day=all: %s?day=all", base_url)
+        resp_all = requests.get(f"{base_url}?day=all", timeout=30)
+        resp_all.raise_for_status()
+        soup_all = BeautifulSoup(resp_all.text, "html.parser")
+        if soup_all.find("dt", class_="ptitle"):
+            return _cvf_find_in_soup(soup_all, title)
+
+        # Edge case: day=all is empty — scrape individual day links (e.g. CVPR 2020)
         for a in soup.find_all("a", href=True):
             href = a["href"]
             if "day=" not in href or "day=all" in href:
                 continue
-            url = href if href.startswith("http") else f"{_CVF_BASE}/{href}"
-            result = _cvf_search_page(url, title)
+            day_url = href if href.startswith("http") else f"{_CVF_BASE}/{href}"
+            logger.debug("CVF fetching day page: %s", day_url)
+            resp_day = requests.get(day_url, timeout=30)
+            resp_day.raise_for_status()
+            result = _cvf_find_in_soup(BeautifulSoup(resp_day.text, "html.parser"), title)
             if result is not None:
                 return result
     except Exception:
@@ -263,14 +274,14 @@ def venue_source(external_ids: dict) -> PdfDownloadSource | None:
     dblp_key = external_ids.get("DBLP", "")
     venue = dblp_key.split("/")[1] if "/" in dblp_key else ""
     mapping: dict[str, PdfDownloadSource] = {
-        "cvpr": PdfDownloadSource.cvf,
-        "iccv": PdfDownloadSource.cvf,
-        "wacv": PdfDownloadSource.cvf,
-        "eccv": PdfDownloadSource.ecva,
-        "nips": PdfDownloadSource.neurips,
-        "icml": PdfDownloadSource.pmlr,
-        "iclr": PdfDownloadSource.openreview,
-        "aaai": PdfDownloadSource.aaai,
-        **{v: PdfDownloadSource.acl for v in _ACL_VENUES},
+        "cvpr": PdfDownloadSource.venue_cvf,
+        "iccv": PdfDownloadSource.venue_cvf,
+        "wacv": PdfDownloadSource.venue_cvf,
+        "eccv": PdfDownloadSource.venue_ecva,
+        "nips": PdfDownloadSource.venue_neurips,
+        "icml": PdfDownloadSource.venue_pmlr,
+        "iclr": PdfDownloadSource.venue_openreview,
+        "aaai": PdfDownloadSource.venue_aaai,
+        **{v: PdfDownloadSource.venue_acl for v in _ACL_VENUES},
     }
     return mapping.get(venue)
