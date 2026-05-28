@@ -1,6 +1,7 @@
 """
 TODO: make sure the paper finding (ExternalIDs, venue-based) rules are in the desired order.
 """
+import datetime
 import logging
 import re
 from pathlib import Path
@@ -67,7 +68,8 @@ def _venue_year_from_dblp(dblp_key: str) -> int | None:
     if not m:
         return None
     yy = int(m.group(1))
-    return 2000 + yy if yy <= 25 else 1900 + yy
+    current_yy = datetime.date.today().year % 100
+    return 2000 + yy if yy <= current_yy else 1900 + yy
 
 
 def find_and_download_pdf(
