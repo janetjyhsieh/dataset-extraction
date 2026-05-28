@@ -12,6 +12,7 @@ import argparse
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -42,13 +43,10 @@ def _get_keywords(note: openreview.Note) -> list[str]:
 
 
 def _note_matches(note: openreview.Note, keywords: list[str]) -> bool:
-    note_keywords = _get_keywords(note) + [note.content.get("title", "")]
-    query_lower = [q.lower() for q in keywords]
-    return any(
-        any(q in kw.lower() for q in query_lower)
-        for kw in note_keywords
-        if isinstance(kw, str)
-    )
+    title = note.content.get("title", "").get("value", "")
+    keywords_concat_title = " ".join(_get_keywords(note)) + title
+    words = set(re.findall(r"[a-z]+", keywords_concat_title.lower()))
+    return any(kw.lower() in words for kw in keywords)
 
 
 def get_papers(
