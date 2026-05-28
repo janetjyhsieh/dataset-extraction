@@ -25,6 +25,7 @@ class PdfDownloadSource(str, Enum):
     pmlr = "pmlr"
     openreview = "openreview"
     aaai = "aaai"
+    pubmedcentral = "pubmedcentral"
     direct = "direct"
 
 
