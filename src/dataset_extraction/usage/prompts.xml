@@ -8,10 +8,38 @@
     task and how they are used — especially whether the authors made any changes to existing
     datasets. This matters because when different papers apply different modifications to the
     same dataset, their results are not directly comparable.
+
+    UNIT OF ANALYSIS. Each entry represents a unique (dataset, task, modification-variant)
+    combination:
+      - "task" is the problem the dataset supports (e.g. image classification, machine
+        translation, question answering) — NOT the role it plays. Do NOT split entries by
+        role: a dataset used for both training and evaluation, on the same task with the
+        same modifications, is a SINGLE entry.
+      - "dataset" vs "modification-variant" turns on PROVENANCE — who created the variant,
+        and whether it was released:
+          * DATASET: any dataset released as a named, citable artifact. Each
+            distinctly-named published variant is its OWN dataset, with its own
+            dataset_name and source_paper, even when derived from another dataset (e.g.
+            CelebA vs CelebA-HQ; COMPAS vs compas-two-years). This INCLUDES a variant that
+            THIS paper's authors create AND release as a named artifact — it is a dataset
+            whose source_paper is this paper (see citation Case A). Version strings of the
+            SAME named dataset (e.g. SQuAD v1.1 vs v2.0) are NOT separate datasets; record
+            them in dataset_version.
+          * MODIFICATION-VARIANT: a change THIS paper's authors make to a published
+            dataset within this paper (filtering, subsetting, re-splitting, re-annotation,
+            transformation, augmentation, translation, etc.) WITHOUT releasing the result
+            as a named, citable artifact. It does NOT get its own dataset_name; record it
+            on the underlying dataset's entry via modifications / modification_details. It
+            splits entries only when the same published dataset is used under two
+            meaningfully different author-modifications in distinct experiments.
+
+    Tests:
+      - Released as a named, citable artifact (by anyone, including these authors)? -> DATASET.
+      - Changed only in-paper by these authors, with no released artifact? -> MODIFICATION-VARIANT.
   </task>
 
   <scope>
-    <title>WHICH DATASETS TO INCLUDE</title>
+    <title>WHICH DATASET USAGE TO INCLUDE</title>
     <general_rules>
       Only extract datasets used in the MAIN experiments that support the paper's central claims. Exclude:
       <exclusions>
@@ -28,7 +56,6 @@
     </training_datasets>
     <benchmark_suites>
       <rule>Always create one entry per sub-task the authors measured in the paper</rule>
-      <examples>GLUE, BIG-Bench, HELMET</examples>
     </benchmark_suites>
   </scope>
 
@@ -38,7 +65,7 @@
       <questions>
         <question id="1">What is the paper's main method or contribution?</question>
         <question id="2">In which section(s) do the authors describe their datasets and experimental setup?</question>
-        <question id="3">What datasets are used, and for what purpose in the experiments?</question>
+        <question id="3">What datasets are used, and for what tasks in the experiments?</question>
         <question id="4">For each dataset: do the authors describe using a subset, applying filtering, creating new splits, re-annotating, combining with other data, or making any other changes? Quote the key sentence(s) as evidence.</question>
         <question id="5">Are there any benchmark suites used? If so, what are the individual sub-tasks the authors measured? Each sub-task requires its own entry.</question>
         <question id="6">For each dataset: is a citation provided anywhere in the paper (including all sections, footnotes, appendices, and captions)? If no citation is found, does the dataset appear to originate from this paper, a sister paper, or is it a missing citation oversight?</question>
@@ -46,27 +73,34 @@
     </step>
 
     <step number="2" label="JSON OUTPUT">
-      After the scratchpad, output a JSON array. Each element is one dataset usage instance.
+      After the scratchpad, output a single JSON object with one key, "dataset_usages",
+      whose value is an array. Each array element is one dataset usage instance.
       <separate_entries_for>
-        <case>The same dataset used for different purposes (e.g., training vs. evaluation)</case>
-        <case>The same dataset used with meaningfully different subsets or modifications in distinct experiments</case>
+        <case>The same dataset used for two different tasks (e.g., image classification vs. object detection)</case>
+        <case>The same dataset used with meaningfully different subsets or modifications in distinct experiments (a distinct modification-variant)</case>
       </separate_entries_for>
-      <note>If no qualifying datasets are found, return an empty array [].</note>
-      <note>Be conservative: only report information explicitly stated or clearly implied in the paper. Do not infer or hallucinate details.</note>
+      <do_not_separate_for>
+        <case>The same dataset used for both training and evaluation on the same task with the same modifications — this is ONE entry; role does not create separate entries.</case>
+      </do_not_separate_for>
+      <note>If no qualifying datasets are found, return {"dataset_usages": []}.</note>
+      <note>Be conservative: only report information explicitly stated or clearly implied in the paper. Do not hallucinate datasets or tasks.</note>
     </step>
   </instructions>
 
   <output_instructions>
-    - Respond with a reasoning scratchpad followed by valid JSON only, with absolutely no
-      text after the JSON.
-    - If no qualifying datasets are found, return an empty array [].
+    - Respond with a reasoning scratchpad followed by a single valid JSON object only, with
+      absolutely no text after the JSON.
+    - If no qualifying datasets are found, return {"dataset_usages": []}.
     - If a field's value cannot be determined from the paper, use null. Never use empty
       strings.
     - For `modification_evidence`, copy the relevant sentence(s) verbatim from the paper,
       using "..." to elide words if needed. Preserve exact wording.
     - Only flag `modifications` as true if the paper describes an explicit change to the
       dataset. Using a dataset's original, published splits as-is does NOT count as a
-      modification.
+      modification. When an author-created variant has graduated to its own DATASET
+      (because the authors released it as a named, citable artifact), the act of creating
+      it is baked into that artifact; set `modifications` to true on that dataset's entry
+      only if the authors apply FURTHER changes on top of the released version.
     - A dataset may be associated with multiple citations. Select the single most relevant
       paper using this priority order:
         1. The paper that originally introduced or released the dataset (the "dataset paper").
@@ -85,12 +119,13 @@
 
         Case A — The dataset was published in this same paper: This applies when the
         dataset is itself one of the new datasets introduced or released in this paper
-        (i.e. it is among the paper's own contributions). Generate a bibliographic string
-        in APA format using available information from the paper (authors, year, title,
-        venue). If insufficient information is available to generate a proper APA string,
-        use "(self)" as the bibliographic string. Always populate `title` and
-        `first_author` from the paper. Set `relevance_reason` to "Source dataset is
-        published in the same paper."
+        (i.e. it is among the paper's own contributions). An in-paper transformation that
+        the authors do NOT release as a standalone named artifact is a modification-variant,
+        not a Case A dataset. Generate a bibliographic string in APA format using available
+        information from the paper (authors, year, title, venue). If insufficient
+        information is available to generate a proper APA string, use "(self)" as the
+        bibliographic string. Always populate `title` and `first_author` from the paper.
+        Set `relevance_reason` to "Source dataset is published in the same paper."
 
         Case B — The dataset was published in a sister paper: This applies when the
         dataset is associated with closely related work by overlapping authors (e.g. a
@@ -112,14 +147,15 @@
       <check>Using a standard published split as-is does NOT count as a modification.</check>
     </consistency_checks>
 
-    <![CDATA[
     {
       "dataset_usages": [
         {
           "dataset_name": "<canonical name of the dataset, including acronym if used in
               the paper, e.g. Stanford Question Answering Dataset (SQuAD)>",
-          "dataset_version": "<specific version or release used, if stated, e.g. v1.1,
-              2017, SuperGLUE. null if not mentioned>",
+          "dataset_version": "<specific version of THIS named dataset, if stated — e.g.
+              v1.1, v2.0, '2017 release'. For version strings of the same dataset only; a
+              distinctly-named variant (e.g. CelebA-HQ vs CelebA) is a SEPARATE dataset,
+              not a version. null if not mentioned>",
           "source_paper": {
             "bibliographic_string": "<the verbatim bibliographic string from the paper's
                 reference list, if a citation exists. If no citation exists and the
@@ -146,14 +182,25 @@
           "dataset_task_summary": "<a narrative description of how this dataset is used in
               the paper, including: the task it supports (e.g. image classification, machine
               translation, question answering), whether it is used for training, fine-tuning,
-              or evaluation, and which splits are used if specified. Write 1–3 sentences as
-              the authors themselves would describe it. Include brief supporting quotes from
-              the paper where they clarify usage. Example: \"Used to evaluate the proposed
-              architecture on image classification. The authors report top-1 accuracy on the
-              standard validation split, noting that 'we follow the standard evaluation
-              protocol on ImageNet.'\" >",
-          "modifications": "<true if the paper describes ANY change to this dataset;
-              false otherwise>",
+              or evaluation, and which splits are used if specified. If the dataset plays
+              multiple roles for this same (dataset, task, modification) — e.g. both training
+              and evaluation — describe them together here in this single entry. Write 1–3
+              sentences as the authors themselves would describe it. Include brief supporting
+              quotes from the paper where they clarify usage.
+
+              Examples:
+              - \"Used to evaluate the proposed architecture on image classification. The
+                authors report top-1 accuracy on the standard validation split, noting that
+                'we follow the standard evaluation protocol on ImageNet.'\"
+              - \"Used to fine-tune the model on extractive question answering. The authors
+                train on the full training set and evaluate on the development set, stating
+                that 'we fine-tune on SQuAD v1.1 following the standard setup.'\"
+              - \"Used to evaluate the model on natural language inference. The authors
+                report accuracy on the matched and mismatched test sets, noting 'we evaluate
+                on both the matched and mismatched conditions of MultiNLI.'\" >",
+          "modifications": <JSON boolean literal, unquoted — output true or false, never
+              the strings "true"/"false". true if the paper describes ANY change to this
+              dataset, false otherwise>,
           "modification_details": "<if modifications is true, describe each change,
               including any of the following that apply: filtering (removal of samples by
               any criterion), splitting (only if authors create new splits or use splits
@@ -164,7 +211,7 @@
               language), deduplication (removing duplicates), temporal filtering
               (restricting to a time range), or other changes. null if modifications
               is false.>",
-          "modification_evidence": "<a direct quote of ≤40 words from the paper that is
+          "modification_evidence": "<a direct quote of ≤60 words from the paper that is
               the primary evidence for the modification(s), using \"...\" to elide words
               if needed. Preserve exact wording. null if modifications is false.>",
           "source_section": "<section(s) of the paper where this usage is described,
@@ -175,6 +222,5 @@
         }
       ]
     }
-    ]]>
   </output_schema>
 </system_prompt>
