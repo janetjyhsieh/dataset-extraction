@@ -24,7 +24,7 @@ Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
 def extract_datasets_and_save(
     job: DatasetJob,
     client: Client,
-    nodes: DatasetNodes,
+    dataset_db: DatasetNodes,
 ) -> list[DatasetNode]:
     result = extract_datasets(job.pdf_path, client)
     new_dataset_nodes = []
@@ -35,7 +35,7 @@ def extract_datasets_and_save(
             # Need an identifier for the dataset
         )
         new_dataset_nodes.append(dataset_node)
-        nodes.insert(dataset_node)
+        dataset_db.insert(dataset_node)
     return new_dataset_nodes
 
 def create_and_save_dataset_paper(title: str, dataset_nodes: list[DatasetNode], dataset_paper_db: DatasetPaperNodes):
@@ -46,7 +46,7 @@ def create_and_save_dataset_paper(title: str, dataset_nodes: list[DatasetNode], 
     }
     dataset_paper = DatasetPaperNode(
             title = title,
-            datasets = [dn.name for dn in dataset_nodes],
+            datasets = [dn.dataset_id for dn in dataset_nodes],
             source_papers_titles = list(source_titles)
         )
     dataset_paper_db.insert(dataset_paper)

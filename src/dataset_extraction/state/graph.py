@@ -77,10 +77,15 @@ class _NodeStore(Generic[_T]):
 
 
 class DatasetNodes(_NodeStore[DatasetNode]):
-    """Persistent store for dataset nodes, keyed by dataset name."""
+    """Persistent store for dataset nodes, keyed by dataset_id."""
 
     def __init__(self, db_path: str | Path) -> None:
-        super().__init__(db_path, DatasetNode, "name")
+        super().__init__(db_path, DatasetNode, "dataset_id")
+
+    def get_by_name(self, name: str) -> list[DatasetNode]:
+        """Return all nodes with the given dataset name."""
+        results = self._db.search(Query().name == name)
+        return [DatasetNode.model_validate(doc) for doc in results]
 
 
 class DatasetPaperNodes(_NodeStore[DatasetPaperNode]):

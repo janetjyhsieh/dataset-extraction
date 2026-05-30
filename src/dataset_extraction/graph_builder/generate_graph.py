@@ -50,16 +50,17 @@ def build_lineage_graph(working_dir: Path) -> nx.DiGraph:
     paper_info_db = PaperInfoNodes(state_dir / "paper_info_nodes.json")
 
     info_by_title = {p.canonical_title: p for p in paper_info_db.all()}
-    dataset_by_name = {d.name: d for d in dataset_db.all()}
+    dataset_by_id = {d.dataset_id: d for d in dataset_db.all()}
 
     G = nx.DiGraph()
 
     papers = dataset_paper_db.all()
     for paper in papers:
         info = info_by_title.get(paper.title)
+        dataset_names = [dataset_by_id[did].name for did in paper.datasets if did in dataset_by_id]
         G.add_node(
             paper.title,
-            datasets=paper.datasets,
+            datasets=dataset_names,
             source_processed=paper.source_processed,
             year=info.year if info else None,
             venue=info.venue if info else None,
@@ -79,8 +80,8 @@ def build_lineage_graph(working_dir: Path) -> nx.DiGraph:
 
             # Collect which of the source paper's datasets are cited by this paper's datasets.
             source_datasets: list[str] = []
-            for dataset_name in paper.datasets:
-                node = dataset_by_name.get(dataset_name)
+            for dataset_id in paper.datasets:
+                node = dataset_by_id.get(dataset_id)
                 if node is None:
                     continue
                 for src in node.sources:

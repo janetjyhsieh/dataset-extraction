@@ -52,12 +52,13 @@ class PaperInfo(BaseModel):
 class DatasetPaperNode(BaseModel):
     """A paper that introduces one or more new datasets.
 
-    ``datasets`` is populated after LLM extraction completes.
+    ``datasets`` is populated after LLM extraction completes; each entry is a
+    ``dataset_id`` (not a name) referencing a ``DatasetNode``.
     ``source_papers_titles`` is populated from the source dataset citations found
     during extraction — these are the papers that proposed the upstream
     datasets used to construct the datasets introduced by this paper.
     """
     title: str
-    datasets: list[str] = []
+    datasets: list[str] = []  # dataset_id values
     source_papers_titles: list[str] = []
     source_processed: bool = False
