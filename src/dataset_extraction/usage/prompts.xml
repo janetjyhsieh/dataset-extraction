@@ -9,12 +9,19 @@
     datasets. This matters because when different papers apply different modifications to the
     same dataset, their results are not directly comparable.
 
-    UNIT OF ANALYSIS. Each entry represents a unique (dataset, task, modification-variant)
-    combination:
+    UNIT OF ANALYSIS. Each entry represents a unique
+    (dataset, subtask, task, modification-variant) combination:
       - "task" is the problem the dataset supports (e.g. image classification, machine
         translation, question answering) — NOT the role it plays. Do NOT split entries by
         role: a dataset used for both training and evaluation, on the same task with the
-        same modifications, is a SINGLE entry.
+        same modifications, is a SINGLE entry. If a <tasks_of_interest> module is present,
+        normalize this label to the closest entry in its list (see that module); otherwise
+        use a concise free-form task name.
+      - "subtask" identifies an individual sub-task within a benchmark suite when the
+        authors report it separately (e.g. "Abstract Algebra" within MMLU). It is null for
+        any dataset that is not a separately-reported benchmark sub-task. It is part of the
+        key so that per-sub-task entries stay distinct even when they share a normalized
+        task label (see benchmark_suites).
       - "dataset" vs "modification-variant" turns on PROVENANCE — who created the variant,
         and whether it was released:
           * DATASET: any dataset released as a named, citable artifact. Each
@@ -38,6 +45,16 @@
       - Changed only in-paper by these authors, with no released artifact? -> MODIFICATION-VARIANT.
   </task>
 
+  <grounding>
+    Base all extraction on the PROVIDED paper text only. Do NOT supply citations, dataset
+    versions, or dataset facts from outside knowledge. The full reference list is included
+    in the provided text; use it to populate bibliographic_string verbatim.
+
+    Exception (Case B): identifying a sister-paper source requires reasoning about author
+    overlap and research lineage. Perform that reasoning over the provided text and
+    reference list — you may infer relationships, but still must not import external facts.
+  </grounding>
+
   <scope>
     <title>WHICH DATASET USAGE TO INCLUDE</title>
     <general_rules>
@@ -46,16 +63,21 @@
         <exclusion>Datasets used ONLY in experiments that the paper's own authors explicitly label as "toy", "illustrative", "preliminary", or "proof-of-concept"</exclusion>
         <exclusion>Datasets used ONLY in ablation studies explicitly labeled as such by the authors</exclusion>
         <exclusion>Datasets used in experiments which appear ONLY in the appendix or supplemental materials</exclusion>
+        <exclusion>Datasets mentioned only in related work, background, or as prior-art comparisons — i.e. not actually run by the authors in their own experiments</exclusion>
       </exclusions>
     </general_rules>
     <training_datasets>
       <include>Datasets used for training performed in this paper</include>
       <include>Fine-tuning datasets if the authors fine-tune a pre-trained model</include>
+      <include>Pre-training datasets when the authors themselves perform the pre-training as part of this paper's contribution (i.e. they pre-train from scratch, rather than using an off-the-shelf pre-trained model)</include>
       <exclude>Pre-training datasets for pre-trained models the authors use off-the-shelf (i.e., without any fine-tuning)</exclude>
       <exclude>Pre-training datasets when authors only perform fine-tuning (include only the fine-tuning dataset)</exclude>
     </training_datasets>
     <benchmark_suites>
-      <rule>Always create one entry per sub-task the authors measured in the paper</rule>
+      <definition>A benchmark suite is a named collection of multiple distinct sub-tasks evaluated together (e.g. GLUE, SuperGLUE, MMLU, BIG-bench, HELM).</definition>
+      <rule>Granularity follows what the authors REPORT, not what the suite contains:
+        - If the authors report per-sub-task results (e.g. all 57 MMLU subject scores), create one entry per reported sub-task, and set "subtask" to that sub-task's name (e.g. "Abstract Algebra").
+        - If the authors report only an aggregate/average score, create a SINGLE entry for the suite with "subtask" set to null, and set "task" to the suite-level task it measures (e.g. for MMLU, "language understanding").</rule>
     </benchmark_suites>
   </scope>
 
@@ -67,7 +89,7 @@
         <question id="2">In which section(s) do the authors describe their datasets and experimental setup?</question>
         <question id="3">What datasets are used, and for what tasks in the experiments?</question>
         <question id="4">For each dataset: do the authors describe using a subset, applying filtering, creating new splits, re-annotating, combining with other data, or making any other changes? Quote the key sentence(s) as evidence.</question>
-        <question id="5">Are there any benchmark suites used? If so, what are the individual sub-tasks the authors measured? Each sub-task requires its own entry.</question>
+        <question id="5">Are there any benchmark suites used? If so, what are the individual sub-tasks the authors measured? Each separately-reported sub-task requires its own entry.</question>
         <question id="6">For each dataset: is a citation provided anywhere in the paper (including all sections, footnotes, appendices, and captions)? If no citation is found, does the dataset appear to originate from this paper, a sister paper, or is it a missing citation oversight?</question>
       </questions>
     </step>
@@ -102,14 +124,14 @@
       it is baked into that artifact; set `modifications` to true on that dataset's entry
       only if the authors apply FURTHER changes on top of the released version.
     - A dataset may be associated with multiple citations. Select the single most relevant
-      paper using this priority order:
-        1. The paper that originally introduced or released the dataset (the "dataset paper").
-        2. If no clear dataset paper exists, the paper most directly describing the dataset's
-           content, size, or collection methodology.
-        3. If a specific version is identified, cite the paper that introduced that version
-           rather than the original dataset paper.
-    - Always populate `source_paper.relevance_reason`, regardless of which priority rule
-      was applied.
+      paper as follows:
+        - Default: the paper that originally introduced or released the dataset (the
+          "dataset paper").
+        - Exception: if a specific version is used, cite the paper that introduced that
+          version instead.
+        - Fallback: if no clear dataset paper exists, cite the paper most directly
+          describing the dataset's content, size, or collection methodology.
+    - Always populate `source_paper.relevance_reason`, regardless of which rule was applied.
     - Authors do not always cite datasets consistently. Before concluding that no citation
       exists for a dataset, scan the entire paper — including all sections, footnotes,
       appendices, and captions — for any citation associated with that dataset name. If a
@@ -156,6 +178,10 @@
               v1.1, v2.0, '2017 release'. For version strings of the same dataset only; a
               distinctly-named variant (e.g. CelebA-HQ vs CelebA) is a SEPARATE dataset,
               not a version. null if not mentioned>",
+          "subtask": "<for an individual sub-task of a benchmark suite reported separately
+              by the authors, the sub-task's name as the authors write it (e.g. 'Abstract
+              Algebra' within MMLU). Record verbatim; do NOT normalize. null for any
+              dataset that is not a separately-reported benchmark sub-task.>",
           "source_paper": {
             "bibliographic_string": "<the verbatim bibliographic string from the paper's
                 reference list, if a citation exists. If no citation exists and the
@@ -171,8 +197,8 @@
                 Always populate if the paper can be identified. Use null only when no
                 citation exists and the source cannot be identified.>",
             "relevance_reason": "<one sentence explaining why this citation was chosen as
-                most relevant — e.g. it is the original dataset paper, the most recent
-                version, or the one explicitly named alongside the dataset. For datasets
+                most relevant — e.g. it is the original dataset paper, the version actually
+                used, or the one explicitly named alongside the dataset. For datasets
                 published in the same paper, use \"Source dataset is published in the same
                 paper.\" For missing citations with no identifiable source, use \"No
                 citation provided.\">"
@@ -223,4 +249,25 @@
       ]
     }
   </output_schema>
+
+  <!-- ===== DETACHABLE MODULE: TASK NORMALIZATION =====
+       Attach this block ONLY for papers where task labels should be normalized.
+       Delete everything between these markers to fall back to free-form task labels.
+       Populate <labels> with the canonical task vocabulary for the domain being analyzed. -->
+  <tasks_of_interest>
+    <directive>When this block is present, set every "task" field to the SINGLE closest
+      matching label from the list below. Normalize the LABEL ONLY — do not change
+      extraction granularity (entry count still follows what the authors report, per the
+      benchmark_suites rule) and do not normalize "subtask" values (record those verbatim).
+      If no label is a reasonable match, use a concise free-form task name AND add "task
+      label not in provided list" to that entry's notes field, so gaps in the vocabulary
+      are visible.</directive>
+    <labels>
+      <!-- domain-specific; replace with your list, e.g.: -->
+      <label>language understanding</label>
+      <label>question answering</label>
+      <label>machine translation</label>
+    </labels>
+  </tasks_of_interest>
+  <!-- ===== END DETACHABLE MODULE ===== -->
 </system_prompt>
