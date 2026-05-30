@@ -1,4 +1,8 @@
-DATASET_PROMPT = """You are a scientific paper analyst specializing in dataset documentation and data lineage.
+from pathlib import Path
+
+DATASET_PROMPT = (Path(__file__).parent / "prompts.xml").read_text()
+
+DATASET_PROMPT_ = """You are a scientific paper analyst specializing in dataset documentation and data lineage.
 
 TASK
 Analyze the provided research paper and extract structured information about any NEW dataset(s) it introduces and publicly releases.
@@ -33,6 +37,7 @@ OUTPUT INSTRUCTIONS
     1. The paper that originally introduced or released the dataset (the "dataset paper").
     2. If no clear dataset paper exists, the paper most directly describing the dataset's content, size, or collection methodology.
     3. If the authors use a specific version or split of a dataset, prefer the citation of the paper corresponding to that version.
+- If a source datast is not associated with any citation, e.g. YouTube, output null for all fields under `sources.source_paper`.
 - Always populate `source_paper.relevance_reason`, regardless of which priority rule was applied.
 
 OUTPUT SCHEMA
@@ -55,10 +60,10 @@ OUTPUT SCHEMA
                 {
                     "source_dataset_name": "<name of the upstream source dataset>",
                     "source_paper": {
-                        "bibliographic_string": "<the full bibliographic string of the source paper, or null if no citation is given>",
-                        "title": "<title of the most relevant paper introducing or describing this source dataset>",
-                        "first_author": "<last, first>",
-                        "relevance_reason": "<one sentence explaining why this citation was chosen as most relevant, e.g. it is the original dataset paper, the most recent version, or the one explicitly named alongside the dataset>"
+                        "bibliographic_string": "<the full bibliographic string of the source paper, or simply \"null\" if no citation is given>",
+                        "title": "<title of the most relevant paper introducing or describing this source dataset, or \"null\" if no citation is given>",
+                        "first_author": "<last, first>, or \"null\" if no citation is given",
+                        "relevance_reason": "<one sentence explaining why this citation was chosen as most relevant, e.g. it is the original dataset paper, the most recent version, or the one explicitly named alongside the dataset. Output \"null\" if no citation is given.>"
                     },
                     "source_quote": "<verbatim sentence(s) from the paper evidencing use of this source dataset>",
                     "filtering_and_transformation": "<describe in 2-3 sentences any filtering, sampling, cleaning, relabeling, augmentation, or other transformation applied to this source dataset. If used as-is, state that explicitly.>"
