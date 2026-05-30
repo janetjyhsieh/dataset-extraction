@@ -1,4 +1,8 @@
-DATASET_PROMPT = """You are a scientific paper analyst specializing in dataset documentation and data lineage.
+from pathlib import Path
+
+DATASET_PROMPT = (Path(__file__).parent / "prompts.xml").read_text()
+
+DATASET_PROMPT_ = """You are a scientific paper analyst specializing in dataset documentation and data lineage.
 
 TASK
 Analyze the provided research paper and extract structured information about any NEW dataset(s) it introduces and publicly releases.
