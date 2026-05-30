@@ -61,6 +61,14 @@
         treat it as a new dataset entry with the previous version listed as a source dataset.
       </edge_case>
 
+      <edge_case name="primary_source_data">
+        If new data is collected directly from a primary source — such as an API (e.g.
+        YouTube API, Twitter API), web scraping, sensors, human annotators, or any other
+        first-hand collection method — this does NOT count as a source dataset and should
+        NOT appear in `sources`. Treat it as original data creation and capture the
+        collection method in `new_data_creation_method` instead.
+      </edge_case>
+
     </edge_cases>
 
   </what_qualifies_as_a_new_dataset>
@@ -121,6 +129,34 @@
           rather than the original dataset paper.
     - Always populate `source_paper.relevance_reason`, regardless of which priority rule
       was applied.
+    - For source dataset citations, authors do not always cite consistently. Before
+      concluding that no citation exists for a source dataset, scan the entire paper —
+      including all sections, footnotes, appendices, and captions — for any citation
+      associated with that dataset name. If a citation is found anywhere in the paper,
+      use it.
+    - When a source dataset has no citation anywhere in the paper, determine which of the
+      following cases applies and populate `source_paper` accordingly:
+
+        Case A — The dataset was published in this same paper: This applies when the
+        source dataset is itself one of the new datasets introduced in this paper (i.e. it
+        also appears in `new_datasets`). Generate a bibliographic string in APA format
+        using available information from the paper (authors, year, title, venue). If
+        insufficient information is available to generate a proper APA string, use "(self)"
+        as the bibliographic string. Always populate `title` and `first_author` from the
+        paper. Set `relevance_reason` to "Source dataset is published in the same paper."
+
+        Case B — The dataset was published in a sister paper: This applies when the
+        dataset is associated with closely related work by overlapping authors (e.g. a
+        companion paper, a concurrent preprint, or an earlier publication in the same
+        research line) that is cited elsewhere in this paper. Identify the most relevant
+        such citation and use it. Pay close attention to dataset version: if a specific
+        version is used, cite the paper that introduced that version. Note that sister
+        papers may share only some authors with the current paper.
+
+        Case C — Missing citation (likely an oversight): This applies when no citation can
+        be found and the dataset does not appear to originate from this paper or a sister
+        paper. Set `bibliographic_string`, `title`, and `first_author` to null. Set
+        `relevance_reason` to "No citation provided."
   </output_instructions>
 
   <output_schema>
@@ -160,17 +196,27 @@
                       "source_dataset_name": "<name of the upstream source dataset,
                           including version if identified>",
                       "source_paper": {
-                          "bibliographic_string": "<copy the bibliographic string verbatim
-                              as it appears in the paper's reference list, or null if no
-                              citation is given>",
-                          "title": "<title of the most relevant paper introducing or
-                              describing this source dataset, or \"null\" if no citation is
-                              given>",
-                          "first_author": "<last, first, or \"null\" if no citation>",
+                          "bibliographic_string": "<the verbatim bibliographic string from
+                              the paper's reference list, if a citation exists. If no
+                              citation exists and the dataset was published in this same
+                              paper, generate an APA-format string from available
+                              information, or use \"(self)\" if insufficient information is
+                              available. If no citation exists and this appears to be a
+                              missing citation oversight, use null.>",
+                          "title": "<title of the source dataset paper. Always populate
+                              this field if the paper can be identified (whether cited,
+                              self-published, or a sister paper). Use null only when no
+                              citation exists and the source cannot be identified.>",
+                          "first_author": "<last, first of the source dataset paper. Always
+                              populate if the paper can be identified. Use null only when
+                              no citation exists and the source cannot be identified.>",
                           "relevance_reason": "<one sentence explaining why this citation
-                              was chosen as most relevant, e.g. it is the original dataset
+                              was chosen as most relevant — e.g. it is the original dataset
                               paper, the most recent version, or the one explicitly named
-                              alongside the dataset. Output \"null\" if no citation.>"
+                              alongside the dataset. For datasets published in the same
+                              paper, use \"Source dataset is published in the same paper.\"
+                              For missing citations with no identifiable source, use
+                              \"No citation provided.\">"
                       },
                       "source_quote": "<verbatim sentence(s) from the paper evidencing use
                           of this source dataset. If the evidence spans non-contiguous
