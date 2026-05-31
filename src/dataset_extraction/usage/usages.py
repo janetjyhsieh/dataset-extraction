@@ -15,13 +15,9 @@ class DatasetUsage(BaseModel):
     dataset_version: str | None
     dataset_variant: str | None
     task: str
-    subtask: str | None
     source_paper: SourcePaper
     aliases: list[str]
     dataset_task_summary: str
-    modifications: bool
-    modification_details: str | None
-    modification_evidence: str | None
     source_section: str
     notes: str | None
 

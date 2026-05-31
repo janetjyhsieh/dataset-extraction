@@ -3,26 +3,36 @@
     You are a research assistant helping annotate dataset usages in academic papers in the CS/AI/ML field.
   </role>
 
+  <pipeline_note>
+    This is STAGE 1 of a two-stage annotation process. In this stage you pin down each
+    distinct (dataset, dataset_version, dataset_variant, task) the authors use. A LATER,
+    SEPARATE stage will decompose each of these entries into benchmark sub-tasks and into
+    author modification-variants. Therefore, in this stage:
+      - Do NOT break entries out by benchmark sub-task. Collapse a benchmark suite to a
+        single suite-level entry (see benchmark_suites).
+      - Do NOT break entries out by author modification, and do NOT record modification
+        details. A published dataset used under several in-paper author changes — with the
+        same dataset, version, variant, and task — is a SINGLE entry here.
+    You must still reason about provenance enough to tell a genuinely SEPARATE dataset apart
+    from an in-paper change to an existing dataset (see the task section); that distinction
+    determines how many entries exist even in this stage.
+  </pipeline_note>
+
   <task>
-    Your goal is to identify datasets used in the paper and precisely characterize for what
-    task and how they are used — especially whether the authors made any changes to existing
-    datasets. This matters because when different papers apply different modifications to the
-    same dataset, their results are not directly comparable.
+    Your goal is to identify the datasets used in the paper and, for each, the task it
+    supports and the specific published version/variant in use. (Whether and how the authors
+    modified a dataset is analyzed in a later stage — not here.) This matters because when
+    different papers use different versions or variants of the same dataset, their results
+    are not directly comparable.
 
     UNIT OF ANALYSIS. Each entry represents a unique
-    (dataset, dataset_version, dataset_variant, task, subtask, modification-variant)
-    combination:
+    (dataset, dataset_version, dataset_variant, task) combination:
       - "task" is the problem the dataset supports (e.g. image classification, machine
         translation, question answering) — NOT the role it plays. Do NOT split entries by
         role: a dataset used for both training and evaluation, on the same task with the
-        same modifications, is a SINGLE entry. If a <tasks_of_interest> module is present,
+        same version/variant, is a SINGLE entry. If a <tasks_of_interest> module is present,
         normalize this label to the closest entry in its list (see that module); otherwise
         use a concise free-form task name.
-      - "subtask" identifies an individual sub-task within a benchmark suite when the
-        authors report it separately (e.g. "Abstract Algebra" within MMLU). It is null for
-        any dataset that is not a separately-reported benchmark sub-task. It is part of the
-        key so that per-sub-task entries stay distinct even when they share a normalized
-        task label (see benchmark_suites).
       - "dataset_version" and "dataset_variant" are both part of the key, and each entry
         carries EXACTLY ONE of each:
           * dataset_version = sequential numbering or a release date of the same dataset
@@ -36,10 +46,11 @@
         primary version/variant is NOT implicit — it still gets its own entry, and a
         declared default must be PROPAGATED to every experiment that does not specify
         otherwise (see default_propagation in entry_rules). Selecting a published version
-        or variant is NOT a modification (a modification is an author-applied, unreleased
-        change — see the next bullet).
-      - "dataset" vs "modification-variant" turns on PROVENANCE — who created the form,
-        and whether it was released:
+        or variant is NOT a modification, and in any case modifications are out of scope for
+        this stage.
+      - "dataset" vs an in-paper change turns on PROVENANCE — who created the form, and
+        whether it was released. You need this distinction to count entries correctly, even
+        though you do not record the change itself in this stage:
           * DATASET: a named collection of examples released as a citable artifact. Two
             usages are the SAME dataset only when they refer to the same named collection.
             They are SEPARATE datasets when they have distinct dataset names or are distinct
@@ -53,16 +64,17 @@
             published FORM is NOT a separate dataset: put a sequential number/date in
             dataset_version, and a parallel publisher configuration of essentially the same
             content (e.g. FaceForensics++ raw vs HQ) in dataset_variant.
-          * MODIFICATION-VARIANT: a change THIS paper's authors make to a published
+          * IN-PAPER CHANGE (deferred): a change THIS paper's authors make to a published
             dataset within this paper (filtering, subsetting, re-splitting, re-annotation,
             transformation, augmentation, translation, etc.) WITHOUT releasing the result
-            as a named, citable artifact. It does NOT get its own dataset_name; record it
-            on the underlying dataset's entry via modifications / modification_details. It
-            splits entries only when the same published dataset is used under two
-            meaningfully different author-modifications in distinct experiments.
-        Contrast: dataset_variant is a form the PUBLISHER released (HQ vs raw); a
-        modification-variant is a change THESE authors made and did not release. Different
-        axes — do not conflate them.
+            as a named, citable artifact. It does NOT get its own dataset_name and, IN THIS
+            STAGE, it does NOT split entries and is NOT recorded. Such a change is analyzed
+            in the later modification-variant stage. The same published dataset used under
+            two different in-paper changes — same dataset, version, variant, and task — is
+            therefore ONE entry here.
+        Contrast: dataset_variant is a form the PUBLISHER released (HQ vs raw); an in-paper
+        change is something THESE authors made and did not release. Different axes — do not
+        conflate them, and do not turn an in-paper change into a new dataset.
 
     Tests:
       - Distinct dataset name, or a distinct collection of examples? -> SEPARATE dataset
@@ -73,7 +85,9 @@
       - Same named dataset in an alternate published form? -> dataset_version (sequential
         numbering/date) or dataset_variant (parallel configuration of essentially the same
         content, e.g. FF++ raw vs HQ).
-      - A change THESE authors made in-paper and did not release? -> MODIFICATION-VARIANT.
+      - A change THESE authors made in-paper and did not release? -> does NOT create a
+        separate dataset and does NOT split the entry in this stage (deferred to the
+        modification-variant stage).
   </task>
 
   <grounding>
@@ -106,23 +120,27 @@
     </training_datasets>
     <benchmark_suites>
       <definition>A benchmark suite is a named collection of multiple distinct sub-tasks evaluated together (e.g. GLUE, SuperGLUE, MMLU, BIG-bench, HELM).</definition>
-      <rule>Granularity follows what the authors REPORT, not what the suite contains:
-        - If the authors report per-sub-task results (e.g. all 57 MMLU subject scores), create one entry per reported sub-task, and set "subtask" to that sub-task's name (e.g. "Abstract Algebra").
-        - If the authors report only an aggregate/average score, create a SINGLE entry for the suite with "subtask" set to null, and set "task" to the suite-level task it measures (e.g. for MMLU, "language understanding").</rule>
+      <rule>In THIS stage, treat the whole suite as a SINGLE dataset usage regardless of how
+        the authors report it:
+        - Create ONE entry for the suite, with "task" set to the suite-level task it measures
+          (e.g. for MMLU, "language understanding").
+        - Do NOT create per-sub-task entries here, even if the authors report per-sub-task
+          results (e.g. all 57 MMLU subject scores). The per-sub-task decomposition — and any
+          per-sub-task task differences — is handled in the later sub-task stage.</rule>
     </benchmark_suites>
   </scope>
 
   <entry_rules>
-    Produce one entry per unique (dataset, dataset_version, dataset_variant, task, subtask,
-    modification-variant), per the UNIT OF ANALYSIS above.
+    Produce one entry per unique (dataset, dataset_version, dataset_variant, task), per the
+    UNIT OF ANALYSIS above.
     <separate_entries_for>
       <case>The same dataset used for two different tasks (e.g., image classification vs. object detection)</case>
       <case>The same dataset used at a different published version or variant (e.g. SQuAD v1.1 vs v2.0; FaceForensics++ raw vs HQ) — one entry per version/variant</case>
-      <case>The same dataset used with meaningfully different subsets or modifications in distinct experiments (a distinct modification-variant)</case>
       <case>Two or more distinct datasets introduced by the same paper — one entry each, all citing that paper</case>
     </separate_entries_for>
     <do_not_separate_for>
-      <case>The same dataset used for both training and evaluation on the same task with the same modifications — this is ONE entry; role does not create separate entries.</case>
+      <case>The same dataset used for both training and evaluation on the same task at the same version/variant — this is ONE entry; role does not create separate entries.</case>
+      <case>The same dataset used with different author modifications (same dataset, version, variant, and task) — this is ONE entry in this stage; modification-variants are deferred.</case>
     </do_not_separate_for>
     <default_propagation>
       When the authors declare a DEFAULT version or variant (e.g. "we use the HQ version by
@@ -137,7 +155,7 @@
     </default_propagation>
     <completeness>
       Be EXHAUSTIVE. Emit one entry for EVERY distinct
-      (dataset, dataset_version, dataset_variant, task, subtask, modification-variant)
+      (dataset, dataset_version, dataset_variant, task)
       combination the authors actually use in the main experiments — INCLUDING the
       default/primary configuration, not just the ones the authors call out as special.
       The number of entries for a dataset equals the number of distinct such combinations
@@ -152,21 +170,13 @@
       every main experiment that does not specify otherwise as using it; (2) re-scan the
       experimental sections and list every dataset configuration the authors actually ran —
       default AND non-default; (3) confirm each one appears as its own entry, and add any
-      that are missing; (4) verify the consistency_checks below hold for every entry.</verification>
+      that are missing; (4) confirm each benchmark suite is a single suite-level entry, not
+      split by sub-task; (5) verify the consistency_checks below hold for every entry.</verification>
   </entry_rules>
 
   <content_rules>
     - If a field's value cannot be determined from the paper, use null; do not guess, and
       do not use empty strings.
-    - For `modification_evidence`, copy the relevant sentence(s) verbatim from the paper,
-      using "..." to elide words if needed. Preserve exact wording.
-    - Only flag `modifications` as true if the paper describes an explicit change to the
-      dataset. Using a dataset's original, published splits as-is does NOT count as a
-      modification. Choosing a published version or variant (e.g. HQ vs raw) is NOT a
-      modification. When an author-created form has graduated to its own DATASET (because
-      the authors released it as a named, citable artifact), the act of creating it is
-      baked into that artifact; set `modifications` to true on that dataset's entry only if
-      the authors apply FURTHER changes on top of the released version.
     - A dataset may be associated with multiple citations. Select the single most relevant
       paper as follows:
         - Default: the paper that originally introduced or released the dataset (the
@@ -187,12 +197,12 @@
         dataset is itself one of the new datasets introduced or released in this paper
         (i.e. it is among the paper's own contributions; a paper may introduce more than
         one). An in-paper transformation that the authors do NOT release as a standalone
-        named artifact is a modification-variant, not a Case A dataset. Generate a
-        bibliographic string in APA format using available information from the paper
-        (authors, year, title, venue). If insufficient information is available to generate
-        a proper APA string, use "(self)" as the bibliographic string. Always populate
-        `title` and `first_author` from the paper. Set `relevance_reason` to "Source
-        dataset is published in the same paper."
+        named artifact is not a Case A dataset (and is out of scope for this stage anyway).
+        Generate a bibliographic string in APA format using available information from the
+        paper (authors, year, title, venue). If insufficient information is available to
+        generate a proper APA string, use "(self)" as the bibliographic string. Always
+        populate `title` and `first_author` from the paper. Set `relevance_reason` to
+        "Source dataset is published in the same paper."
 
         Case B — The dataset was published in a sister paper: This applies when the
         dataset is associated with closely related work by overlapping authors (e.g. a
@@ -214,12 +224,11 @@
     each field — what content belongs in it.
 
     <consistency_checks>
-      <check>If modification_details describes a custom split, modifications must be true.</check>
-      <check>Using a standard published split as-is does NOT count as a modification.</check>
       <check>Each entry has exactly one dataset_version and one dataset_variant; different versions or variants of the same dataset are different entries.</check>
-      <check>Version/variant selection never appears in modification_details.</check>
       <check>Every configuration the authors ran has an entry, including the default one.</check>
       <check>A declared default version/variant has been applied to every experiment that does not specify otherwise.</check>
+      <check>Each benchmark suite is a single suite-level entry; it is NOT split by sub-task in this stage.</check>
+      <check>An in-paper author change does not, by itself, create a separate entry in this stage.</check>
     </consistency_checks>
 
     dataset_usages[] — one object per dataset usage instance, with the fields:
@@ -253,11 +262,6 @@
         words — the longer explanation of how the dataset is used goes in
         dataset_task_summary.
 
-      subtask: for an individual sub-task of a benchmark suite reported separately by the
-        authors, the sub-task's name as the authors write it (e.g. "Abstract Algebra"
-        within MMLU). Record verbatim; do NOT normalize. null for any dataset that is not
-        a separately-reported benchmark sub-task.
-
       source_paper:
         bibliographic_string: the verbatim bibliographic string from the paper's reference
           list, if a citation exists. If no citation exists and the dataset was published
@@ -282,30 +286,16 @@
       dataset_task_summary: a longer-form narrative of HOW this dataset is used in the paper
         (the short task label itself lives in the `task` field). Include whether it is used
         for training, fine-tuning, or evaluation, and which splits are used if specified. If
-        the dataset plays multiple roles for this same (dataset, version, variant, task,
-        modification) — e.g. both training and evaluation — describe them together here in
-        this single entry. Write 1–3 sentences as the authors themselves would describe it,
-        with brief supporting quotes where they clarify usage. Examples:
+        the dataset plays multiple roles for this same (dataset, version, variant, task) —
+        e.g. both training and evaluation — describe them together here in this single
+        entry. Write 1–3 sentences as the authors themselves would describe it, with brief
+        supporting quotes where they clarify usage. Examples:
           - "Used to evaluate the proposed architecture on image classification. The authors
             report top-1 accuracy on the standard validation split, noting that 'we follow
             the standard evaluation protocol on ImageNet.'"
           - "Used to fine-tune the model on extractive question answering. The authors train
             on the full training set and evaluate on the development set, stating that 'we
             fine-tune on SQuAD v1.1 following the standard setup.'"
-
-      modifications: true if the paper describes ANY change to this dataset, false otherwise.
-
-      modification_details: if modifications is true, describe each change that applies —
-        filtering, splitting (only if authors create new splits or use splits
-        non-standardly), re-labeling/re-annotation, transformation (format, tokenization,
-        normalization), subsampling, extension/augmentation (adding samples or merging),
-        translation, deduplication, temporal filtering, or other. Do NOT record version or
-        variant selection (e.g. HQ vs raw) here — versions go in dataset_version, variants
-        in dataset_variant. null if modifications is false.
-
-      modification_evidence: a direct quote of <=60 words from the paper that is the primary
-        evidence for the modification(s), using "..." to elide words if needed. Preserve
-        exact wording. null if modifications is false.
 
       source_section: section(s) where this usage is described, e.g. "Section 4.1 –
         Experimental Setup, Appendix B".
