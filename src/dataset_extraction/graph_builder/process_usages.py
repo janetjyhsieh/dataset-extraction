@@ -126,6 +126,7 @@ def main() -> None:
     parser.add_argument("--working-dir", required=True, help="Directory containing pdfs/ and state/")
     parser.add_argument("--provider", choices=["claude", "openai", "foundry"], default="claude")
     parser.add_argument("--model", default=None, help="Model ID (default: provider's default)")
+    parser.add_argument("--reasoning-effort", choices=["low", "medium", "high"], default=None, help="Reasoning effort (foundry only)")
     args = parser.parse_args()
 
     kwargs = {} if args.model is None else {"model": args.model}
@@ -134,6 +135,8 @@ def main() -> None:
     elif args.provider == "openai":
         client = OpenAIClient(**kwargs)
     else:
+        if args.reasoning_effort is not None:
+            kwargs["reasoning_effort"] = args.reasoning_effort
         client = FoundryClient(**kwargs)
 
     working_dir = Path(args.working_dir)

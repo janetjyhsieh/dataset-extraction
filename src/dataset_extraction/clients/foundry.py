@@ -14,8 +14,9 @@ DEFAULT_MODEL = "gpt-5.4-nano"
 
 
 class FoundryClient:
-    def __init__(self, model: str = DEFAULT_MODEL):
+    def __init__(self, model: str = DEFAULT_MODEL, reasoning_effort: str | None = None):
         self.model = model
+        self.reasoning_effort = reasoning_effort
         project_client = AIProjectClient(
             endpoint=os.environ["AZURE_FOUNDRY_ENDPOINT"],
             credential=DefaultAzureCredential(),
@@ -34,10 +35,16 @@ class FoundryClient:
             {"type": "input_text", "text": prompt},
         ]
 
+    def _reasoning_kwargs(self) -> dict:
+        if self.reasoning_effort is None:
+            return {}
+        return {"reasoning": {"effort": self.reasoning_effort}}
+
     def send_pdf(self, pdf_path: str | Path, prompt: str) -> str:
         response = self._client.responses.create(
             model=self.model,
             input=[{"role": "user", "content": self._pdf_content(pdf_path, prompt)}],
+            **self._reasoning_kwargs(),
         )
         return response.output_text
 
@@ -52,6 +59,7 @@ class FoundryClient:
         response = self._client.responses.create(
             model=self.model,
             input=[{"role": "user", "content": self._pdf_content(pdf_path, prompt)}],
+            **self._reasoning_kwargs(),
             text={
                 "format": {
                     "type": "json_schema",
