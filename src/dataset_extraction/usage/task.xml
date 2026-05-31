@@ -1,0 +1,15 @@
+  <tasks_of_interest>
+    <directive>When this block is present, set every "task" field to the SINGLE closest
+      matching label from the list below. Normalize the LABEL ONLY — do not change
+      extraction granularity (entry count still follows what the authors report, per the
+      benchmark_suites rule) and do not normalize "subtask" values (record those verbatim).
+      If no label is a reasonable match, use a concise free-form task name AND add "task
+      label not in provided list" to that entry's notes field, so gaps in the vocabulary
+      are visible.</directive>
+    <labels>
+      <!-- domain-specific; replace with your list, e.g.: -->
+      <label>language understanding</label>
+      <label>question answering</label>
+      <label>machine translation</label>
+    </labels>
+  </tasks_of_interest>
