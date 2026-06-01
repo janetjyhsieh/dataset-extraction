@@ -14,7 +14,7 @@ class DatasetUsage(BaseModel):
     dataset_name: str
     dataset_version: str | None
     dataset_variant: str | None
-    task: str
+    tasks: list[str]
     source_paper: SourcePaper
     aliases: list[str]
     dataset_task_summary: str
