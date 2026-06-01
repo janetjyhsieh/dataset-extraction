@@ -12,7 +12,7 @@ def canonicalize_title(title: str) -> str:
     Lowercases, strips leading/trailing whitespace, and collapses internal
     whitespace to a single space.
     """
-    return re.sub(r"\s+", " ", title.lower().strip())
+    return re.sub(r"\s+", " ", title.lower().strip()).rstrip(".")
 
 
 class PdfDownloadSource(str, Enum):
