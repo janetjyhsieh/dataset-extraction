@@ -3,91 +3,42 @@
     You are a research assistant helping annotate dataset usages in academic papers in the CS/AI/ML field.
   </role>
 
-  <pipeline_note>
-    This is STAGE 1 of a two-stage annotation process. In this stage you pin down each
-    distinct (dataset, dataset_version, dataset_variant, task) the authors use. A LATER,
-    SEPARATE stage will decompose each of these entries into benchmark sub-tasks and into
-    author modification-variants. Therefore, in this stage:
-      - Do NOT break entries out by benchmark sub-task. Collapse a benchmark suite to a
-        single suite-level entry (see benchmark_suites).
-      - Do NOT break entries out by author modification, and do NOT record modification
-        details. A published dataset used under several in-paper author changes — with the
-        same dataset, version, variant, and task — is a SINGLE entry here.
-    You must still reason about provenance enough to tell a genuinely SEPARATE dataset apart
-    from an in-paper change to an existing dataset (see the task section); that distinction
-    determines how many entries exist even in this stage.
-  </pipeline_note>
+  <scope_note>
+    This annotation pins down each distinct (dataset, dataset_version, dataset_variant) the
+    authors use, and for each one lists every task it supports. You must take care to notice
+    the dataset versions and published dataset variants used in the paper.
+  </scope_note>
 
   <task>
-    Your goal is to identify the datasets used in the paper and, for each, the task it
-    supports and the specific published version/variant in use. (Whether and how the authors
-    modified a dataset is analyzed in a later stage — not here.) This matters because when
-    different papers use different versions or variants of the same dataset, their results
-    are not directly comparable.
+    Your goal is to identify the datasets used in the paper and, for each, the specific
+    published version/variant in use and the task(s) it supports.
 
-    UNIT OF ANALYSIS. Each entry represents a unique
-    (dataset, dataset_version, dataset_variant, task) combination:
-      - "task" is the problem the dataset supports (e.g. image classification, machine
-        translation, question answering) — NOT the role it plays. Do NOT split entries by
-        role: a dataset used for both training and evaluation, on the same task with the
-        same version/variant, is a SINGLE entry. If a <tasks_of_interest> module is present,
-        normalize this label to the closest entry in its list (see that module); otherwise
-        use a concise free-form task name.
-      - "dataset_version" and "dataset_variant" are both part of the key, and each entry
-        carries EXACTLY ONE of each:
-          * dataset_version = sequential numbering or a release date of the same dataset
-            (e.g. v1.1, v2.0, "2017").
-          * dataset_variant = a parallel published configuration of the same dataset,
-            distinguished by a NON-sequential axis the publisher released (e.g.
-            compression/quality such as FaceForensics++ raw vs HQ, resolution, language
-            edition).
-        Both keep the same dataset_name and source_paper. If the paper uses more than one
-        version or variant of a dataset, create a SEPARATE entry for each. A default or
-        primary version/variant is NOT implicit — it still gets its own entry, and a
-        declared default must be PROPAGATED to every experiment that does not specify
-        otherwise (see default_propagation in entry_rules). Selecting a published version
-        or variant is NOT a modification, and in any case modifications are out of scope for
-        this stage.
-      - "dataset" vs an in-paper change turns on PROVENANCE — who created the form, and
-        whether it was released. You need this distinction to count entries correctly, even
-        though you do not record the change itself in this stage:
-          * DATASET: a named collection of examples released as a citable artifact. Two
-            usages are the SAME dataset only when they refer to the same named collection.
-            They are SEPARATE datasets when they have distinct dataset names or are distinct
-            collections of examples — INCLUDING when a single paper introduces several
-            datasets (a shared citation does NOT merge them; each gets its own entry and its
-            own dataset_name, all pointing to that paper). A separate dataset may be derived
-            from another (e.g. CelebA-HQ is its own named, distinct collection derived from
-            CelebA — separate, not a variant; COMPAS vs compas-two-years likewise). When
-            THIS paper's authors create AND release a new named dataset, its source_paper is
-            this paper (see citation Case A). Within ONE named dataset, an alternate
-            published FORM is NOT a separate dataset: put a sequential number/date in
-            dataset_version, and a parallel publisher configuration of essentially the same
-            content (e.g. FaceForensics++ raw vs HQ) in dataset_variant.
-          * IN-PAPER CHANGE (deferred): a change THIS paper's authors make to a published
-            dataset within this paper (filtering, subsetting, re-splitting, re-annotation,
-            transformation, augmentation, translation, etc.) WITHOUT releasing the result
-            as a named, citable artifact. It does NOT get its own dataset_name and, IN THIS
-            STAGE, it does NOT split entries and is NOT recorded. Such a change is analyzed
-            in the later modification-variant stage. The same published dataset used under
-            two different in-paper changes — same dataset, version, variant, and task — is
-            therefore ONE entry here.
-        Contrast: dataset_variant is a form the PUBLISHER released (HQ vs raw); an in-paper
-        change is something THESE authors made and did not release. Different axes — do not
-        conflate them, and do not turn an in-paper change into a new dataset.
+    UNIT OF ANALYSIS. Each entry is a unique (dataset, dataset_version, dataset_variant)
+    combination, plus the list of tasks it supports. Task is NOT part of the key (see the
+    `tasks` field). The two key axes:
+      - dataset_version = a sequential number or release date of the same named dataset
+        (e.g. v1.1, v2.0, "2017").
+      - dataset_variant = a parallel published configuration of the same named dataset on a
+        NON-sequential axis the publisher released (e.g. raw vs HQ compression, resolution,
+        language edition).
+    Versions/variants keep the same dataset_name but may have DIFFERENT source_papers: a new
+    version/variant is often introduced in a later paper, so cite the paper that introduced
+    the specific form used (see content_rules). Each used version/variant gets its own entry,
+    including the default/primary one (see default_propagation).
 
-    Tests:
-      - Distinct dataset name, or a distinct collection of examples? -> SEPARATE dataset
-        (each its own dataset_name + source_paper) — even if it shares a paper/citation with
-        another dataset (e.g. two datasets introduced by one paper). A different source
-        paper is a strong signal of separateness; the SAME source paper does NOT by itself
-        make something a variant.
-      - Same named dataset in an alternate published form? -> dataset_version (sequential
-        numbering/date) or dataset_variant (parallel configuration of essentially the same
-        content, e.g. FF++ raw vs HQ).
-      - A change THESE authors made in-paper and did not release? -> does NOT create a
-        separate dataset and does NOT split the entry in this stage (deferred to the
-        modification-variant stage).
+    Deciding dataset vs version/variant:
+      - Distinct dataset name, or a distinct released collection? -> SEPARATE dataset, with
+        its own dataset_name and source_paper — even when one paper introduces several
+        datasets, and even for a derived-but-separately-released collection (e.g. CelebA-HQ
+        from CelebA).
+      - Same named dataset in another published form? -> same dataset; record the form in
+        dataset_version (sequential/dated) or dataset_variant (parallel config, e.g. FF++
+        raw vs HQ).
+      - An author's own unreleased change (filtering, re-splitting, etc.)? -> not a new
+        dataset, version, or variant. Keep the entry's (dataset, dataset_version,
+        dataset_variant) and source_paper as those of the BASE form the change was applied
+        to (so the citation depends on the exact dataset/version/variant the change starts
+        from).
   </task>
 
   <grounding>
@@ -120,58 +71,51 @@
     </training_datasets>
     <benchmark_suites>
       <definition>A benchmark suite is a named collection of multiple distinct sub-tasks evaluated together (e.g. GLUE, SuperGLUE, MMLU, BIG-bench, HELM).</definition>
-      <rule>In THIS stage, treat the whole suite as a SINGLE dataset usage regardless of how
-        the authors report it:
-        - Create ONE entry for the suite, with "task" set to the suite-level task it measures
-          (e.g. for MMLU, "language understanding").
-        - Do NOT create per-sub-task entries here, even if the authors report per-sub-task
-          results (e.g. all 57 MMLU subject scores). The per-sub-task decomposition — and any
-          per-sub-task task differences — is handled in the later sub-task stage.</rule>
+      <rule>Treat the whole suite as a SINGLE dataset entry.Create ONE entry for the suite, whose `tasks` list contains the suite-level task it
+          measures (e.g. for MMLU, "language understanding").
     </benchmark_suites>
   </scope>
 
   <entry_rules>
-    Produce one entry per unique (dataset, dataset_version, dataset_variant, task), per the
-    UNIT OF ANALYSIS above.
+    Produce one entry per unique (dataset, dataset_version, dataset_variant), per the UNIT
+    OF ANALYSIS above. Within each entry, list every task that combination supports.
     <separate_entries_for>
-      <case>The same dataset used for two different tasks (e.g., image classification vs. object detection)</case>
       <case>The same dataset used at a different published version or variant (e.g. SQuAD v1.1 vs v2.0; FaceForensics++ raw vs HQ) — one entry per version/variant</case>
       <case>Two or more distinct datasets introduced by the same paper — one entry each, all citing that paper</case>
     </separate_entries_for>
     <do_not_separate_for>
-      <case>The same dataset used for both training and evaluation on the same task at the same version/variant — this is ONE entry; role does not create separate entries.</case>
-      <case>The same dataset used with different author modifications (same dataset, version, variant, and task) — this is ONE entry in this stage; modification-variants are deferred.</case>
+      <case>The same dataset at the same version/variant used for multiple tasks, and/or for both training and evaluation — this is ONE entry; list all tasks in the `tasks` field. Neither a differing task nor a differing role creates separate entries.</case>
     </do_not_separate_for>
     <default_propagation>
       When the authors declare a DEFAULT version or variant (e.g. "we use the HQ version by
       default unless otherwise specified"), PROPAGATE it. Any main-experiment usage of that
       dataset that does NOT explicitly name a different version/variant is using the declared
-      default. You must identify those usages and emit entries for them with the default
-      version/variant — do NOT wait for a table or section to be explicitly labeled with the
-      default before recording it. Only an experiment that explicitly names a different
-      version/variant (e.g. a table captioned "... (raw)") overrides the default for that
-      experiment. Concretely: if a paper says "HQ by default" and only some tables are
-      labeled "(raw)", then the unlabeled experiments use HQ — emit both HQ and raw entries.
+      default. You must identify those usages and emit tasks for them with the default
+      version/variant — do NOT rely on a table or section to explicitly label them. If an 
+      experiment explicitly names a different version/variant (e.g. a table captioned 
+      "... (raw)"), record those tasks in separate (dataset, dataset_version, dataset_variant)
+      entries. Concretely: if a paper says "HQ by default" and only some tables are labeled 
+      "(raw)", then the unlabeled experiments use HQ — emit both HQ and raw entries.
     </default_propagation>
     <completeness>
-      Be EXHAUSTIVE. Emit one entry for EVERY distinct
-      (dataset, dataset_version, dataset_variant, task)
-      combination the authors actually use in the main experiments — INCLUDING the
-      default/primary configuration, not just the ones the authors call out as special.
-      The number of entries for a dataset equals the number of distinct such combinations
-      it appears in. Silently omitting a used configuration (especially a default) is an
-      error. This does NOT license inventing configurations the authors did not use — stay
-      within what the paper states (see conservatism).
+      Be EXHAUSTIVE in two ways. (1) Emit one entry for EVERY distinct
+      (dataset, dataset_version, dataset_variant) combination the authors actually use in
+      the main experiments — INCLUDING the default/primary configuration, not just the ones
+      the authors call out as special. The number of entries for a dataset equals the number
+      of distinct version/variant combinations it appears in. (2) Within each entry, list
+      EVERY task that combination supports in the main experiments. Silently omitting a used
+      configuration (especially a default) or a supported task is an error. This does NOT
+      license inventing configurations or tasks the authors did not use — stay within what
+      the paper states (see conservatism).
     </completeness>
     <conservatism>Only report information explicitly stated or clearly implied in the paper.
       Do not hallucinate datasets or tasks. If no qualifying datasets are found, return an
       empty list for dataset_usages.</conservatism>
-    <verification>Before finalizing: (1) note any declared default version/variant and treat
-      every main experiment that does not specify otherwise as using it; (2) re-scan the
-      experimental sections and list every dataset configuration the authors actually ran —
-      default AND non-default; (3) confirm each one appears as its own entry, and add any
-      that are missing; (4) confirm each benchmark suite is a single suite-level entry, not
-      split by sub-task; (5) verify the consistency_checks below hold for every entry.</verification>
+    <verification>Before finalizing, do one pass: apply any declared default version/variant
+      to every main experiment that does not name a different one; confirm every
+      configuration the authors actually ran (default AND non-default) appears as its own
+      entry; and confirm each entry's `tasks` list is complete and each benchmark suite is a
+      single suite-level entry.</verification>
   </entry_rules>
 
   <content_rules>
@@ -181,10 +125,8 @@
       paper as follows:
         - Default: the paper that originally introduced or released the dataset (the
           "dataset paper").
-        - Exception: if a specific version is used, cite the paper that introduced that
-          version instead.
-        - Fallback: if no clear dataset paper exists, cite the paper most directly
-          describing the dataset's content, size, or collection methodology.
+        - Exception: if a specific version or variant is used, cite the paper that
+          introduced that version/variant instead.
     - Always populate `source_paper.relevance_reason`, regardless of which rule was applied.
     - Authors do not always cite datasets consistently. Before concluding that no citation
       exists for a dataset, scan the entire paper — including all sections, footnotes,
@@ -196,10 +138,8 @@
         Case A — The dataset was published in this same paper: This applies when the
         dataset is itself one of the new datasets introduced or released in this paper
         (i.e. it is among the paper's own contributions; a paper may introduce more than
-        one). An in-paper transformation that the authors do NOT release as a standalone
-        named artifact is not a Case A dataset (and is out of scope for this stage anyway).
-        Generate a bibliographic string in APA format using available information from the
-        paper (authors, year, title, venue). If insufficient information is available to
+        one). Generate a bibliographic string in APA format using available information from
+        the paper (authors, year, title, venue). If insufficient information is available to
         generate a proper APA string, use "(self)" as the bibliographic string. Always
         populate `title` and `first_author` from the paper. Set `relevance_reason` to
         "Source dataset is published in the same paper."
@@ -207,10 +147,9 @@
         Case B — The dataset was published in a sister paper: This applies when the
         dataset is associated with closely related work by overlapping authors (e.g. a
         companion paper, a concurrent preprint, or an earlier publication in the same
-        research line) that is cited elsewhere in this paper. Identify the most relevant
-        such citation and use it. Pay close attention to dataset version: if a specific
-        version is used, cite the paper that introduced that version. Note that sister
-        papers may share only some authors with the current paper.
+        research line) cited elsewhere in this paper. Identify the most relevant such
+        citation and use it. Sister papers may share only some authors with the current
+        paper.
 
         Case C — Missing citation (likely an oversight): This applies when no citation
         can be found and the dataset does not appear to originate from this paper or a
@@ -223,73 +162,55 @@
     externally via the structured-output schema. The notes below define the SEMANTICS of
     each field — what content belongs in it.
 
-    <consistency_checks>
-      <check>Each entry has exactly one dataset_version and one dataset_variant; different versions or variants of the same dataset are different entries.</check>
-      <check>Every configuration the authors ran has an entry, including the default one.</check>
-      <check>A declared default version/variant has been applied to every experiment that does not specify otherwise.</check>
-      <check>Each benchmark suite is a single suite-level entry; it is NOT split by sub-task in this stage.</check>
-      <check>An in-paper author change does not, by itself, create a separate entry in this stage.</check>
-    </consistency_checks>
-
     dataset_usages[] — one object per dataset usage instance, with the fields:
 
       dataset_name: canonical name of the dataset, including acronym if used in the paper,
         e.g. "Stanford Question Answering Dataset (SQuAD)". If one paper introduces several
         distinct datasets, give each its own entry under its own dataset_name.
 
-      dataset_version: sequential version numbering or release date of THIS named dataset —
-        e.g. "v1.1", "v2.0", "2017 release". ONLY for sequential/dated versions; parallel
-        published forms like HQ/raw go in dataset_variant, and a distinctly-named dataset
-        (e.g. CelebA-HQ) is a SEPARATE dataset. Exactly one per entry; multiple versions
-        used => multiple entries. null if not stated.
+      dataset_version: the sequential number or release date of this named dataset — e.g.
+        "v1.1", "v2.0", "2017 release". Exactly one per entry; null if not stated. (See
+        `task` for version vs variant vs separate dataset.)
 
-      dataset_variant: a parallel published configuration of the SAME named dataset (same
-        dataset_name and source_paper) covering essentially the same content, distinguished
-        by a non-sequential axis the publisher released — e.g. compression/quality ("raw"
-        vs "HQ" for FaceForensics++), resolution, or language edition. If the dataset has
-        multiple published forms and the paper specifies which it uses — even as a default
-        (e.g. "HQ by default") — record that specific form here (e.g. "HQ"); use null only
-        when the dataset has no version/variant distinction. A distinctly-named dataset, or
-        a distinct collection of examples (e.g. CelebA-HQ), is a SEPARATE dataset, not a
-        variant — even if it shares a paper with the base dataset. Choosing a variant is not
-        a modification. Exactly one per entry; multiple variants used => multiple entries.
+      dataset_variant: the parallel published configuration of this named dataset that the
+        paper uses — e.g. compression/quality ("raw"/"HQ" for FaceForensics++), resolution,
+        or language edition. Record the specific form even when it is the declared default
+        (e.g. "HQ"). Exactly one per entry; null only when the dataset has no version/variant
+        distinction. (See `task` for version vs variant vs separate dataset.)
 
-      task: SHORT label for the problem this dataset usage supports — e.g. "image
-        classification", "machine translation", "question answering", "language
-        understanding". This is the "task" element of the unit key. If a <tasks_of_interest>
-        module is present, this MUST be the single closest label from its list (see that
-        module); otherwise a concise free-form label. Always populate. Keep it to a few
-        words — the longer explanation of how the dataset is used goes in
-        dataset_task_summary.
+      tasks: a LIST of short task labels — one per distinct problem this dataset (at this
+        version/variant) supports in the main experiments — e.g. ["image classification",
+        "object detection"]. Task is NOT part of the unit key: a dataset/version/variant
+        used for several tasks is ONE entry whose `tasks` list names all of them, and a
+        dataset used for both training and evaluation on the same task contributes that task
+        only once. If a <tasks_of_interest> module is present, EACH element MUST be the
+        single closest label from its list (see that module); otherwise use concise
+        free-form labels. Keep each label to a few words and do not duplicate labels. Always
+        populate with at least one task. The longer explanation of how the dataset is used
+        across these tasks goes in dataset_task_summary.
 
-      source_paper:
-        bibliographic_string: the verbatim bibliographic string from the paper's reference
-          list, if a citation exists. If no citation exists and the dataset was published
-          in this same paper, generate an APA-format string from available information, or
-          "(self)" if insufficient information is available. If no citation exists and this
-          appears to be a missing-citation oversight, null.
-        title: title of the paper that introduced this dataset. Always populate if the
-          paper can be identified (cited, self-published, or sister paper). null only when
-          no citation exists and the source cannot be identified.
-        first_author: last name of the first author of the dataset source paper. Always
-          populate if the paper can be identified. null only when no citation exists and
-          the source cannot be identified.
-        relevance_reason: one sentence explaining why this citation was chosen — e.g. it is
-          the original dataset paper, the version actually used, or the one explicitly named
-          alongside the dataset. For datasets published in the same paper, "Source dataset
-          is published in the same paper." For missing citations with no identifiable
-          source, "No citation provided."
+      source_paper: the single most relevant citation for this dataset (selection rules and
+        the no-citation Cases A/B/C live in content_rules). Sub-fields:
+        bibliographic_string: the verbatim entry from the paper's reference list; if no
+          citation exists, the Case A APA string or "(self)", or null under Case C.
+        title: the source paper's title; null only when the source cannot be identified.
+        first_author: the source paper's first-author surname; null only when the source
+          cannot be identified.
+        relevance_reason: one sentence on why this citation was chosen, using the fixed
+          strings content_rules specifies for the same-paper and no-citation cases. Always
+          populate.
 
       aliases: any other names or shorthand used for this dataset in the paper, e.g.
         ["SQuAD", "the reading comprehension dataset"]. Empty list if none.
 
       dataset_task_summary: a longer-form narrative of HOW this dataset is used in the paper
-        (the short task label itself lives in the `task` field). Include whether it is used
-        for training, fine-tuning, or evaluation, and which splits are used if specified. If
-        the dataset plays multiple roles for this same (dataset, version, variant, task) —
-        e.g. both training and evaluation — describe them together here in this single
-        entry. Write 1–3 sentences as the authors themselves would describe it, with brief
-        supporting quotes where they clarify usage. Examples:
+        (the short task labels themselves live in the `tasks` field). Include the task(s) it
+        supports, whether it is used for training, fine-tuning, or evaluation, and which
+        splits are used if specified. If the dataset plays multiple roles or supports
+        multiple tasks for this same (dataset, version, variant) — e.g. both training and
+        evaluation, or both classification and detection — describe them together here in
+        this single entry. Write 1-3 sentences as the authors themselves would describe it,
+        with brief supporting quotes where they clarify usage. Examples:
           - "Used to evaluate the proposed architecture on image classification. The authors
             report top-1 accuracy on the standard validation split, noting that 'we follow
             the standard evaluation protocol on ImageNet.'"
@@ -297,7 +218,7 @@
             on the full training set and evaluate on the development set, stating that 'we
             fine-tune on SQuAD v1.1 following the standard setup.'"
 
-      source_section: section(s) where this usage is described, e.g. "Section 4.1 –
+      source_section: section(s) where this usage is described, e.g. "Section 4.1 -
         Experimental Setup, Appendix B".
 
       notes: any other relevant observations — unusual evaluation protocols, combination
