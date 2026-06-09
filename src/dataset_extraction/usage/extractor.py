@@ -1,85 +1,23 @@
 from __future__ import annotations
 
-import json
-import logging
 from pathlib import Path
 from typing import Union
 
 from dataset_extraction.clients.claude import ClaudeClient
+from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 
 from .usages import UsageExtractionResult
-from .prompts import USAGE_PROMPT
 
-logger = logging.getLogger(__name__)
+USAGE_PROMPT = (__import__("pathlib").Path(__file__).parent / "prompts.xml").read_text()
 
-Client = Union[ClaudeClient, OpenAIClient]
+Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
 
 
 def extract_usage(
     pdf_path: str | Path,
     client: Client,
 ) -> tuple[str | None, UsageExtractionResult]:
-    """Extract dataset usage information from a paper PDF.
+    thinking, result = client.send_pdf_structured(pdf_path, USAGE_PROMPT, UsageExtractionResult.model_json_schema(), thinking=True)
+    return thinking, UsageExtractionResult.model_validate(result)
 
-    For Claude, the model's reasoning is returned as a separate thinking string
-    via extended thinking blocks. For OpenAI, reasoning is internal and the
-    first element of the tuple is None.
-
-    Args:
-        pdf_path: Path to the PDF file.
-        client: An instantiated ``ClaudeClient`` or ``OpenAIClient``.
-
-    Returns:
-        A ``(thinking, result)`` tuple where *thinking* is the model's reasoning
-        text (or None) and *result* is a validated ``UsageExtractionResult``.
-    """
-    thinking, raw = client.send_pdf_structured(
-        pdf_path,
-        USAGE_PROMPT,
-        UsageExtractionResult.model_json_schema(),
-        thinking=True,
-    )
-    return thinking, UsageExtractionResult.model_validate(raw)
-
-
-def extract_all_usages(
-    papers_path: str | Path,
-    client: Client,
-) -> None:
-    """Extract dataset usages from all PDFs under *papers_path*/pdfs.
-
-    Appends one JSON line per paper to ``out/usages.jsonl``. Each line
-    includes the paper_id alongside the structured extraction result.
-    Thinking text (Claude only) is saved per-paper to
-    ``out/usages_extraction/{paper_id}_thinking.txt``.
-
-    Args:
-        papers_path: Root papers directory containing a ``pdfs/`` subdirectory.
-        client: An instantiated ``ClaudeClient`` or ``OpenAIClient``.
-    """
-    pdfs = sorted(Path(papers_path).glob("pdfs/*.pdf"))
-    logger.info("Found %d PDF(s) under %s/pdfs", len(pdfs), papers_path)
-
-    out_dir = Path("out/usages_extraction")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    jsonl_path = Path("out/usages_extraction/usages.jsonl")
-
-    with jsonl_path.open("a") as jsonl_file:
-        for pdf in pdfs:
-            paper_id = pdf.stem
-            logger.info("Processing %s", pdf.name)
-            try:
-                thinking, result = extract_usage(pdf, client)
-            except Exception:
-                logger.exception("Extraction failed for %s", pdf.name)
-                continue
-
-            record = {"paper_id": paper_id} | result.model_dump(mode="json")
-            jsonl_file.write(json.dumps(record) + "\n")
-
-            if thinking:
-                (out_dir / f"{paper_id}_thinking.txt").write_text(thinking, encoding="utf-8")
-
-            thinking_note = " + thinking" if thinking else ""
-            logger.info("Saved %d usage(s) from %s%s", len(result.dataset_usages), pdf.name, thinking_note)
