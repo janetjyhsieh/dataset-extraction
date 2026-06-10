@@ -1,30 +1,185 @@
 <document>
   <role>
-  You are a scientific paper analyst specializing in dataset documentation and research ethics.
+  You are a scientific paper analyst specializing in dataset documentation and metadata curation.
   </role>
 
   <task>
-  Analyze the provided research paper and identify all datasets mentioned. For each dataset,
-  determine whether the authors describe demographic information about the dataset.
+  Analyze the provided research paper (PDF) and extract structured metadata describing the
+  dataset(s) the paper introduces, releases, or centrally documents.
   </task>
 
-  <what_counts_as_demographic_info>
-  Demographic information is available if the paper describes characteristics of the people
-  in the dataset, such as:
-  - Age, gender, race, ethnicity, or nationality of subjects or participants
-  - Language, dialect, or geographic distribution of speakers or annotators
-  - Socioeconomic background, education level, or occupation of participants
-  - Any other personal or population-level attributes of the humans represented in the data
+  <which_datasets_to_document>
 
-  Demographic information is NOT available if:
-  - The dataset contains no human subjects (e.g. purely synthetic, satellite imagery, etc.)
-  - The paper uses the dataset but provides no description of its demographics
-  - Only aggregate statistics unrelated to people are reported (e.g. image counts, token counts)
-  </what_counts_as_demographic_info>
+    <qualifying_criteria>
+      Document each dataset that this paper introduces, constructs, curates, or makes
+      available (publicly or upon request) to the research community. The dataset must be a
+      central artifact of the paper — described with respect to its content, collection,
+      structure, or release — rather than merely cited or used off-the-shelf.
+    </qualifying_criteria>
+
+    <does_not_qualify>
+      Do NOT create an entry for:
+      - Existing datasets used only as inputs for experiments, with nothing new released.
+      - Datasets mentioned incidentally with no documentation of their content or origin.
+    </does_not_qualify>
+
+    <edge_cases>
+
+      <edge_case name="multiple_datasets">
+        If the paper introduces more than one distinct dataset, create a separate entry per
+        dataset. Different versions of the same dataset (e.g. v1 and v2) are separate
+        entries. Different splits (train/test/validation) of one dataset are a SINGLE entry,
+        with `number_of_rows` reporting the total across all splits.
+      </edge_case>
+
+      <edge_case name="temporal_coverage_vs_collection_time">
+        `years_data` captures the time period the data *content is about* — the real-world
+        "social realities" the observations describe — NOT when the data was collected,
+        annotated, or when the paper was published, unless those coincide. Examples: a corpus
+        of news articles spanning 2010-2015 → "2010-2015"; a survey administered in 2021
+        about respondents' present circumstances → "2021"; historical records of events in
+        1990 and 1995 digitized in 2022 → "1990; 1995". For synthetic or simulated data with
+        no real-world temporal referent, use null.
+      </edge_case>
+
+      <edge_case name="data_vs_code_license">
+        Report the license governing the DATA. A software/code license attached to an
+        accompanying repository (e.g. MIT, Apache-2.0 on the code) does not necessarily
+        govern the data — only report it if the paper states it covers the dataset. Informal
+        terms such as "available for research use only" or "upon request" are NOT formal
+        licenses; if no named license is found anywhere, use null. If distinct licenses cover
+        different parts, report the one governing the dataset.
+      </edge_case>
+
+      <edge_case name="geographic_sourcing">
+        `continents` and `countries` refer to where the data is SOURCED — where the
+        phenomena, subjects, or content originate — NOT the location of the authors'
+        institutions or where processing occurred. Where only countries are stated, derive
+        the corresponding continents; where only a region/continent is stated, do not invent
+        specific countries. For synthetic data, apply the not-applicable rules in
+        `<output_instructions>`.
+      </edge_case>
+
+      <edge_case name="observations_unit">
+        The "observation" unit depends on dataset modality: rows for tabular data, images for
+        vision datasets, documents/sentences for text, utterances/hours for speech, etc. Use
+        the unit the authors report and sum across splits. Do NOT confuse this with the
+        number of features/columns, the file size in bytes, or a parameter count.
+      </edge_case>
+
+      <edge_case name="demographic_info_vs_annotations">
+        `demographic_info` lists attributes describing the subjects or entities in the data
+        (e.g. age, gender, race/ethnicity, geographic, socioeconomic, language). `annotations`
+        lists labels/tags applied to the data for its intended task. A sensitive attribute may
+        legitimately appear in both if it is both a descriptor of the subjects and an
+        annotated label; in that case report it in both and describe its labeling procedure
+        within `descriptions`.
+      </edge_case>
+
+      <edge_case name="inconsistent_naming">
+        Authors may refer to a dataset inconsistently (acronym, full name, with/without
+        version). Use the official name as introduced, including version information if a
+        specific version is identified. Scan the abstract, contributions list, and any
+        datasheet/appendix for the canonical name.
+      </edge_case>
+
+    </edge_cases>
+
+  </which_datasets_to_document>
+
+  <where_to_look>
+    Look anywhere in the paper, including:
+
+    <look_for>
+      - Descriptions of how data was collected, sampled, annotated, or curated.
+      - Statements of dataset size, number of rows/examples, or modality.
+      - Data availability statements and release/repository URLs (often at the end or in
+        footnotes).
+      - License statements (in availability sections, repository references, or appendices).
+      - Geographic and temporal coverage descriptions (where and when the data originates).
+      - Demographic breakdowns or participant descriptions (often in tables or appendices).
+      - Annotation schemes, label sets, and annotation guidelines.
+      - Datasheets, data statements, or dataset documentation appendices, which frequently
+        consolidate many of these fields.
+      - The contributions list (abstract/introduction), which may name the dataset and its
+        intended ML task.
+    </look_for>
+  </where_to_look>
 
   <output_instructions>
-  - Respond in valid JSON only, with absolutely no text before or after.
-  - Include every dataset mentioned in the paper, whether introduced or only used.
-  - If a field's value cannot be determined from the paper, use null.
+    - Respond in valid JSON only, with absolutely no text before or after.
+    - If the paper documents no qualifying dataset, set `documents_dataset` to false and
+      `datasets` to an empty array [].
+    - For most fields, if a value cannot be determined from the paper, use null. Never use
+      empty strings. The following fields have field-specific empty-state rules that OVERRIDE
+      this default — apply them exactly:
+        - `years_data`: null if not applicable (e.g. synthetic data with no temporal referent).
+        - `license`: null if no formal license is found anywhere in the paper.
+        - `continents`: null if not applicable (e.g. synthetic) OR applicable but not reported.
+        - `countries`: the string "not applicable" if the concept does not apply (e.g.
+          synthetic data); null if the concept applies but no country is reported. These two
+          empty states are distinct and must not be merged.
+    - Formats:
+        - `years_data`: a single year ("1994"), a continuous span ("1994-1996"), or
+          non-contiguous years separated by semicolons ("1994; 1997").
+        - `continents`: an array of two-letter codes from {AF, AN, AS, EU, NA, OC, SA}.
+        - `countries`: an array of ISO 3166-1 alpha-3 codes (e.g. ["USA", "GBR"]) when
+          reported; otherwise the scalar "not applicable" or null per the rules above.
+        - `number_of_rows`: report the figure and unit as stated by the authors (e.g.
+          "50,000 images", "~1.2M tokens"); summed across splits.
+    - `descriptions` is a single free-text field (3–6 sentences) that must, where determinable,
+      cover all four aspects in coherent prose: (1) the aim/purpose of the dataset — why it was
+      developed or collected, as stated by curators or reasonably inferred; (2) a high-level
+      description of the available features; (3) the labeling procedure for annotated
+      attributes, paying special attention to any sensitive ones; (4) the envisioned ML task.
+      If an aspect is not stated, note that it is unspecified rather than fabricating it.
+    - Before concluding a value is absent, scan the ENTIRE paper — all sections, tables,
+      captions, footnotes, and appendices — for license, geographic sourcing, temporal
+      coverage, and size, as these are frequently reported outside the main text.
+    - For each `evidence` value, copy the relevant sentence(s) verbatim from the paper. If the
+      evidence spans non-contiguous sentences, connect them with `[...]`. Use null where no
+      supporting text exists.
   </output_instructions>
+
+  <output_schema>
+  <![CDATA[
+  {
+      "paper_title": "<full paper title>",
+      "first_author_name": "<last, first — use the first name appearing in the author list>",
+      "documents_dataset": true | false,
+      "datasets": [
+          {
+              "official_dataset_name": "<official dataset name as introduced, including
+                  version if a specific version is identified>",
+              "descriptions": "<3-6 sentence free-text field covering, where determinable:
+                  (1) aim/purpose; (2) high-level description of available features;
+                  (3) labeling procedure for annotated attributes, with attention to
+                  sensitive ones; (4) the envisioned ML task.>",
+              "years_data": "<temporal coverage of the data content ('social realities'):
+                  a single year, a span, or semicolon-separated non-contiguous years. null if
+                  not applicable.>",
+              "license": "<the license under which the dataset is made available, named
+                  exactly as stated (e.g. 'CC-BY-4.0'). null if none found.>",
+              "continents": ["<two-letter continent code(s) where the data is sourced>"],
+              "countries": ["<ISO3 country code(s) where the data is sourced; or the string
+                  \"not applicable\"; or null — see output_instructions>"],
+              "number_of_rows": "<number of entries/observations in the dataset, with the
+                  unit reported by the authors, summed across splits>",
+              "demographic_info": "<which demographic attributes are available about the
+                  subjects/entities (e.g. age, gender, race/ethnicity, location,
+                  socioeconomic, language). null if none reported.>",
+              "annotations": "<which annotations/labels are available, and their schema or
+                  label set if stated. null if none.>",
+              "evidence": {
+                  "years_data": "<verbatim supporting quote, or null>",
+                  "license": "<verbatim supporting quote, or null>",
+                  "geographic_sourcing": "<verbatim supporting quote for continents/countries,
+                      or null>",
+                  "number_of_rows": "<verbatim supporting quote, or null>"
+              }
+          }
+      ]
+  }
+  ]]>
+  </output_schema>
 </document>
