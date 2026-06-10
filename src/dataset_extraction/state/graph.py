@@ -107,10 +107,10 @@ class PaperInfoNodes(_NodeStore[PaperInfo]):
             self.insert(null_paper)
 
 class MetadataNodes(_NodeStore[MetadataNode]):
-    """Persistent store for dataset metadata nodes, keyed by metadata_id."""
+    """Persistent store for metadata nodes, keyed by canonicalized paper title."""
 
     def __init__(self, db_path: str | Path) -> None:
-        super().__init__(db_path, MetadataNode, "dataset_id")
+        super().__init__(db_path, MetadataNode, "paper_title")
 
 
 class UsageNodes:
