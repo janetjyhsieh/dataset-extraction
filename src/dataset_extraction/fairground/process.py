@@ -1,4 +1,4 @@
-"""Extract dataset usages and datasets (single-level) from all PDFs in working_dir/pdfs/.
+"""Extract dataset usages and metadata from all PDFs in working_dir/pdfs/.
 
 Results are written to working_dir/fg/yyyy-mm-dd/hh-mm-ss/.
 
@@ -17,29 +17,32 @@ from pathlib import Path
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.graph_builder.build import create_and_save_dataset_paper, extract_datasets_and_save
 from dataset_extraction.graph_builder.process_usages import _load_title_map, extract_and_save_usages
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, UsageNodes
-from dataset_extraction.state.queue import DatasetJob
+from dataset_extraction.fairground.metadata.extractor import extract_metadata
+from dataset_extraction.state.graph import MetadataNodes, UsageNodes
+from dataset_extraction.state.nodes import MetadataNode
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
 
-def extract_datasets_single_level(
+def extract_and_save_metadata(
     working_dir: Path,
     client,
-    dataset_db: DatasetNodes,
-    dataset_paper_db: DatasetPaperNodes,
+    metadata_db: MetadataNodes,
 ) -> None:
     title_map = _load_title_map(working_dir)
     for pdf in sorted((working_dir / "pdfs").glob("*.pdf")):
-        title = title_map.get(pdf.stem, pdf.stem)
-        job = DatasetJob(title=title, pdf_path=str(pdf))
-        logger.info("Extracting datasets from %s", pdf.name)
-        new_dataset_nodes = extract_datasets_and_save(job, client, dataset_db)
-        if new_dataset_nodes:
-            create_and_save_dataset_paper(title, new_dataset_nodes, dataset_paper_db)
+        paper_title = title_map.get(pdf.stem, pdf.stem)
+        logger.info("Extracting metadata from %s", pdf.name)
+        try:
+            result = extract_metadata(pdf, client)
+        except Exception:
+            logger.exception("Metadata extraction failed for %s", pdf.name)
+            continue
+        for dataset in result.datasets:
+            metadata_db.upsert(MetadataNode(**dataset.model_dump(), paper_title=paper_title))
+        logger.info("Saved %d metadata record(s) from %s", len(result.datasets), pdf.name)
 
 
 def main() -> None:
@@ -68,11 +71,10 @@ def main() -> None:
         client = FoundryClient(**kwargs)
 
     usage_nodes = UsageNodes(run_dir / "usages.json")
-    dataset_db = DatasetNodes(run_dir / "dataset_nodes.json")
-    dataset_paper_db = DatasetPaperNodes(run_dir / "dataset_paper_nodes.json")
+    metadata_db = MetadataNodes(run_dir / "metadata_nodes.json")
 
     extract_and_save_usages(working_dir, client, usage_nodes)
-    extract_datasets_single_level(working_dir, client, dataset_db, dataset_paper_db)
+    extract_and_save_metadata(working_dir, client, metadata_db)
 
     logger.info("Done. Results in %s", run_dir)
 
