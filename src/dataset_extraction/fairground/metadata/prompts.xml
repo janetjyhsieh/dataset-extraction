@@ -36,7 +36,7 @@
         `years_data` captures the time period the data *content is about* — the real-world
         "social realities" the observations describe — NOT when the data was collected,
         annotated, or when the paper was published, unless those coincide. Examples: a corpus
-        of news articles spanning 2010-2015 → "2010-2015"; a survey administered in 2021
+        of news articles spanning 2010–2015 → "2010-2015"; a survey administered in 2021
         about respondents' present circumstances → "2021"; historical records of events in
         1990 and 1995 digitized in 2022 → "1990; 1995". For synthetic or simulated data with
         no real-world temporal referent, use null.
@@ -60,20 +60,27 @@
         `<output_instructions>`.
       </edge_case>
 
-      <edge_case name="observations_unit">
+      <edge_case name="rows_observations_unit">
         The "observation" unit depends on dataset modality: rows for tabular data, images for
         vision datasets, documents/sentences for text, utterances/hours for speech, etc. Use
         the unit the authors report and sum across splits. Do NOT confuse this with the
         number of features/columns, the file size in bytes, or a parameter count.
       </edge_case>
 
-      <edge_case name="demographic_info_vs_annotations">
-        `demographic_info` lists attributes describing the subjects or entities in the data
-        (e.g. age, gender, race/ethnicity, geographic, socioeconomic, language). `annotations`
-        lists labels/tags applied to the data for its intended task. A sensitive attribute may
-        legitimately appear in both if it is both a descriptor of the subjects and an
-        annotated label; in that case report it in both and describe its labeling procedure
-        within `descriptions`.
+      <edge_case name="attributes_vs_protected_vs_other_annotations">
+        These three fields must stay disjoint:
+        - `attributes` lists the labeled attributes describing each subject or entity — the
+          per-item attribute set commonly reported for human/facial datasets (e.g. CelebA's
+          Male, Young, Smiling, Eyeglasses, ...). Report the attribute names or, if there are
+          many, a faithful summary of the categories and the total count.
+        - `protected_attributes` lists ONLY the attributes the authors themselves explicitly
+          designate as protected, sensitive, or used for fairness/bias analysis. See the
+          dedicated rule in `<output_instructions>`.
+        - `other_annotations` lists annotation types OTHER than the per-subject attribute set
+          — e.g. facial landmarks, bounding boxes, identity labels, segmentation masks,
+          captions, or task/target labels — and their format. If the dataset's only
+          annotations are the attribute labels already captured in `attributes`, set
+          `other_annotations` to null.
       </edge_case>
 
       <edge_case name="inconsistent_naming">
@@ -97,7 +104,8 @@
         footnotes).
       - License statements (in availability sections, repository references, or appendices).
       - Geographic and temporal coverage descriptions (where and when the data originates).
-      - Demographic breakdowns or participant descriptions (often in tables or appendices).
+      - Labeled attribute lists, and any attributes the authors flag as protected or
+        sensitive (often in fairness, ethics, or limitations sections).
       - Annotation schemes, label sets, and annotation guidelines.
       - Datasheets, data statements, or dataset documentation appendices, which frequently
         consolidate many of these fields.
@@ -119,6 +127,9 @@
         - `countries`: the string "not applicable" if the concept does not apply (e.g.
           synthetic data); null if the concept applies but no country is reported. These two
           empty states are distinct and must not be merged.
+        - `protected_attributes`: null if the authors do not designate any attribute as
+          protected or sensitive.
+        - `dataset_page`: null if the authors do not report a public release URL.
     - Formats:
         - `years_data`: a single year ("1994"), a continuous span ("1994-1996"), or
           non-contiguous years separated by semicolons ("1994; 1997").
@@ -127,6 +138,17 @@
           reported; otherwise the scalar "not applicable" or null per the rules above.
         - `number_of_rows`: report the figure and unit as stated by the authors (e.g.
           "50,000 images", "~1.2M tokens"); summed across splits.
+        - `attributes` / `protected_attributes`: arrays of attribute names. If an attribute
+          set is very large, you may instead give a faithful summary string of the categories
+          with the total count.
+        - `dataset_page`: a single URL string. If the paper reports multiple links, prefer
+          the official project/landing page for the public release over a raw download or
+          mirror link.
+    - `protected_attributes` must contain ONLY attributes the authors themselves characterize
+      as protected, sensitive, demographic-for-fairness, or equivalent. Do NOT infer
+      membership from legal protected-class frameworks, and do NOT promote attributes into
+      this field on your own judgment — if the authors label an attribute as protected, it
+      belongs here; otherwise it does not, even if it appears protected by external standards.
     - `descriptions` is a single free-text field (3–6 sentences) that must, where determinable,
       cover all four aspects in coherent prose: (1) the aim/purpose of the dataset — why it was
       developed or collected, as stated by curators or reasonably inferred; (2) a high-level
@@ -135,7 +157,7 @@
       If an aspect is not stated, note that it is unspecified rather than fabricating it.
     - Before concluding a value is absent, scan the ENTIRE paper — all sections, tables,
       captions, footnotes, and appendices — for license, geographic sourcing, temporal
-      coverage, and size, as these are frequently reported outside the main text.
+      coverage, size, and release URL, as these are frequently reported outside the main text.
     - For each `evidence` value, copy the relevant sentence(s) verbatim from the paper. If the
       evidence spans non-contiguous sentences, connect them with `[...]`. Use null where no
       supporting text exists.
@@ -151,6 +173,9 @@
           {
               "official_dataset_name": "<official dataset name as introduced, including
                   version if a specific version is identified>",
+              "dataset_page": "<URL to the public dataset release as reported in the paper;
+                  the official project/landing page if several links are given. null if no
+                  public release URL is reported.>",
               "descriptions": "<3-6 sentence free-text field covering, where determinable:
                   (1) aim/purpose; (2) high-level description of available features;
                   (3) labeling procedure for annotated attributes, with attention to
@@ -165,17 +190,21 @@
                   \"not applicable\"; or null — see output_instructions>"],
               "number_of_rows": "<number of entries/observations in the dataset, with the
                   unit reported by the authors, summed across splits>",
-              "demographic_info": "<which demographic attributes are available about the
-                  subjects/entities (e.g. age, gender, race/ethnicity, location,
-                  socioeconomic, language). null if none reported.>",
-              "annotations": "<which annotations/labels are available, and their schema or
-                  label set if stated. null if none.>",
+              "attributes": ["<labeled attribute(s) describing each subject/entity (e.g. the
+                  per-item attributes of a facial dataset); or a faithful summary string if
+                  the set is very large. null if none.>"],
+              "protected_attributes": ["<attribute(s) the AUTHORS explicitly designate as
+                  protected or sensitive. null if the authors report none.>"],
+              "other_annotations": ["<annotation type(s) OTHER than the per-subject attribute
+                  set — e.g. landmarks, bounding boxes, identity labels, segmentation masks,
+                  task targets — and their format. null if there are none beyond `attributes`.>"],
               "evidence": {
                   "years_data": "<verbatim supporting quote, or null>",
                   "license": "<verbatim supporting quote, or null>",
                   "geographic_sourcing": "<verbatim supporting quote for continents/countries,
                       or null>",
-                  "number_of_rows": "<verbatim supporting quote, or null>"
+                  "number_of_rows": "<verbatim supporting quote, or null>",
+                  "protected_attributes": "<verbatim supporting quote, or null>"
               }
           }
       ]
