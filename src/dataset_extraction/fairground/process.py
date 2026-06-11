@@ -56,6 +56,7 @@ def main() -> None:
     parser.add_argument("--provider", choices=["claude", "openai", "foundry"], default="foundry")
     parser.add_argument("--model", default=None, help="Model ID (default: provider's default)")
     parser.add_argument("--reasoning-effort", choices=["low", "medium", "high"], default=None, help="Reasoning effort (foundry only)")
+    parser.add_argument("--repopulate-queue", action="store_true", help="Re-enqueue all paper_info entries and run metadata extraction")
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
@@ -86,7 +87,14 @@ def main() -> None:
 
     paper_info_db = PaperInfoNodes(working_dir / "fg" / "state" / "paper_info_nodes.json")
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "fg" / "state" / "dataset_queue.jsonl")
-    enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
+
+    if args.repopulate_queue:
+        for paper in paper_info_db.all():
+            if paper.pdf_info.download_success and paper.pdf_info.pdf_file_path:
+                queue.enqueue(DatasetJob(title=paper.canonical_title, pdf_path=paper.pdf_info.pdf_file_path))
+        logger.info("Repopulated queue with %d paper(s) from paper_info", len(queue))
+    else:
+        enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
 
     metadata_db = MetadataNodes(run_dir / "metadata_nodes.json")
     extract_and_save_metadata(queue, client, metadata_db)
