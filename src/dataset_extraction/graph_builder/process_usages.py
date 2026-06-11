@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 from pathlib import Path
 from typing import Union
@@ -27,23 +26,11 @@ from dataset_extraction.state.nodes import UsageNode
 from dataset_extraction.state.paper import DatasetPaperNode, PdfInfo, PaperInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.extractor import extract_usage
+from dataset_extraction.utils import load_title_map
 
 logger = logging.getLogger("dataset_extraction.graph_builder.process_usages")
 
 Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
-
-
-def _load_title_map(working_dir: Path) -> dict[str, str]:
-    index_path = working_dir / "index.jsonl"
-    if not index_path.exists():
-        return {}
-    title_map: dict[str, str] = {}
-    with open(index_path) as f:
-        for line in f:
-            if line.strip():
-                record = json.loads(line)
-                title_map[record["id"]] = record["title"]
-    return title_map
 
 
 def extract_and_save_usages(
@@ -55,7 +42,7 @@ def extract_and_save_usages(
 
     Skips papers that have already been processed. Returns all stored UsageNodes.
     """
-    title_map = _load_title_map(working_dir)
+    title_map = load_title_map(working_dir)
     pdfs = sorted((working_dir / "pdfs").glob("*.pdf"))
     logger.info("Found %d PDF(s) under %s/pdfs", len(pdfs), working_dir)
 
