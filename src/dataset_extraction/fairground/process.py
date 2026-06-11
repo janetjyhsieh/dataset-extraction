@@ -1,6 +1,7 @@
 """Extract dataset usages and metadata from all PDFs in working_dir/pdfs/.
 
-Results are written to working_dir/fg/yyyy-mm-dd/hh-mm-ss/.
+Usage extraction is skipped if working_dir/state/usages.json already exists.
+Metadata results are written to working_dir/fg/yyyy-mm-dd/hh-mm-ss/.
 
 Usage:
     python -m dataset_extraction.fairground.process --working-dir papers/
@@ -17,32 +18,36 @@ from pathlib import Path
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.graph_builder.process_usages import _load_title_map, extract_and_save_usages
-from dataset_extraction.log import setup_logging
 from dataset_extraction.fairground.metadata.extractor import extract_metadata
-from dataset_extraction.state.graph import MetadataNodes, UsageNodes
+from dataset_extraction.graph_builder.process_usages import enqueue_used_datasets, extract_and_save_usages
+from dataset_extraction.log import setup_logging
+from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes, UsageNodes
 from dataset_extraction.state.nodes import MetadataNode
+from dataset_extraction.state.paper import canonicalize_title
+from dataset_extraction.state.queue import DatasetJob, Queue
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
 
 def extract_and_save_metadata(
-    working_dir: Path,
+    queue: Queue[DatasetJob],
     client,
     metadata_db: MetadataNodes,
 ) -> None:
-    title_map = _load_title_map(working_dir)
-    for pdf in sorted((working_dir / "pdfs").glob("*.pdf")):
-        paper_title = title_map.get(pdf.stem, pdf.stem)
-        logger.info("Extracting metadata from %s", pdf.name)
+    while len(queue) > 0:
+        job = queue.peek()
+        logger.info("Extracting metadata from %s", job.title)
         try:
-            result = extract_metadata(pdf, client)
+            result = extract_metadata(job.pdf_path, client)
         except Exception:
-            logger.exception("Metadata extraction failed for %s", pdf.name)
+            logger.exception("Metadata extraction failed for %s", job.title)
+            queue.dequeue()
             continue
-        for dataset in result.datasets:
-            metadata_db.upsert(MetadataNode(**dataset.model_dump(), paper_title=paper_title))
-        logger.info("Saved %d metadata record(s) from %s", len(result.datasets), pdf.name)
+        data = result.model_dump()
+        data["paper_title"] = canonicalize_title(result.paper_title)
+        metadata_db.upsert(MetadataNode(**data))
+        queue.dequeue()
+        logger.info("Saved %d dataset(s) from %s", len(result.datasets), job.title)
 
 
 def main() -> None:
@@ -54,6 +59,7 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
+    (working_dir / "fg" / "state").mkdir(parents=True, exist_ok=True)
     now = datetime.now()
     run_dir = working_dir / "fg" / now.strftime("%Y-%m-%d") / now.strftime("%H-%M-%S")
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -70,11 +76,20 @@ def main() -> None:
             kwargs["reasoning_effort"] = args.reasoning_effort
         client = FoundryClient(**kwargs)
 
-    usage_nodes = UsageNodes(run_dir / "usages.json")
-    metadata_db = MetadataNodes(run_dir / "metadata_nodes.json")
+    usages_path = working_dir / "state" / "usages.json"
+    usage_nodes = UsageNodes(usages_path)
+    if not usages_path.exists():
+        logger.info("No usages.json found — running usage extraction")
+        extract_and_save_usages(working_dir, client, usage_nodes)
+    else:
+        logger.info("Skipping usage extraction (usages.json already exists)")
 
-    extract_and_save_usages(working_dir, client, usage_nodes)
-    extract_and_save_metadata(working_dir, client, metadata_db)
+    paper_info_db = PaperInfoNodes(working_dir / "fg" / "state" / "paper_info_nodes.json")
+    queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "fg" / "state" / "dataset_queue.jsonl")
+    enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
+
+    metadata_db = MetadataNodes(run_dir / "metadata_nodes.json")
+    extract_and_save_metadata(queue, client, metadata_db)
 
     logger.info("Done. Results in %s", run_dir)
 
