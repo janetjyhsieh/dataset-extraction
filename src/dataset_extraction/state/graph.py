@@ -130,12 +130,26 @@ class UsageNodes:
         self._processed = self._db.table("processed_papers")
 
     def add(self, usage: UsageNode) -> None:
-        """Upsert a usage node keyed by (paper_title, dataset_name)."""
+        """Insert a usage node keyed by (paper_title, dataset_name, dataset_version, dataset_variant).
+
+        Raises:
+            KeyError: If an entry with the same key already exists.
+        """
         Q = Query()
-        self._table.upsert(
-            usage.model_dump(mode="json"),
-            (Q.paper_title == usage.paper_title) & (Q.dataset_name == usage.dataset_name),
+        condition = (
+            (Q.paper_title == usage.paper_title)
+            & (Q.dataset_name == usage.dataset_name)
+            & (Q.dataset_version == usage.dataset_version)
+            & (Q.dataset_variant == usage.dataset_variant)
         )
+        if self._table.contains(condition):
+            raise KeyError(
+                f"Usage already exists: paper_title={usage.paper_title!r}, "
+                f"dataset_name={usage.dataset_name!r}, "
+                f"dataset_version={usage.dataset_version!r}, "
+                f"dataset_variant={usage.dataset_variant!r}"
+            )
+        self._table.insert(usage.model_dump(mode="json"))
 
     def mark_processed(self, paper_title: str) -> None:
         """Record that a paper has been fully usage-extracted (even if zero usages)."""
