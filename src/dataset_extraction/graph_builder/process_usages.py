@@ -18,56 +18,17 @@ from typing import Union
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.downloader.paper_finder import find_and_download_pdf
-from dataset_extraction.graph_builder.build import _already_seen, build
+from dataset_extraction.graph_builder.build import build
 from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes
-from dataset_extraction.usage.nodes import UsageNode, UsageNodes
-from dataset_extraction.state.paper import PdfInfo, PaperInfo, canonicalize_title
+from dataset_extraction.usage.nodes import UsageNodes
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.extractor import extract_and_save_usages
+from dataset_extraction.usage.process import enqueue_used_datasets
 
 logger = logging.getLogger("dataset_extraction.graph_builder.process_usages")
 
 Client = Union[ClaudeClient, FoundryClient, OpenAIClient]
-
-
-def enqueue_used_datasets(
-    usages: list[UsageNode],
-    paper_info_db: PaperInfoNodes,
-    queue: Queue[DatasetJob],
-    working_dir: Path,
-) -> None:
-    """Ensure every used dataset's source paper is in the graph or queued for discovery."""
-    download_dir = working_dir / "discovered" / "pdfs"
-
-    for usage in usages:
-        source_title = usage.source_paper.title
-        if not source_title:
-            logger.debug("'%s' has no source title, skipping", usage.dataset_name)
-            continue
-
-        canonical = canonicalize_title(source_title)
-
-        if _already_seen(canonical, paper_info_db):
-            logger.debug("'%s' already in graph or queue", source_title)
-            continue
-
-        logger.info("'%s' not in graph — looking up '%s'", usage.dataset_name, source_title)
-        usage_paper_info = PaperInfo(
-            raw_title=source_title,
-            canonical_title=canonical,
-            pdf_info=PdfInfo(link_found=False, download_success=False),
-        )
-        pdf_path = find_and_download_pdf(usage_paper_info, download_dir)
-        paper_info_db.insert(usage_paper_info)  # TODO: should this block be reused?
-
-        if pdf_path is None:
-            logger.warning("No PDF found for '%s': %s", source_title, usage_paper_info.pdf_info.errors)
-            continue
-
-        queue.enqueue(DatasetJob(title=canonical, pdf_path=str(pdf_path)))
-        logger.info("Enqueued '%s'", source_title)
 
 
 def main() -> None:
