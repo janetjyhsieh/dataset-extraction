@@ -19,7 +19,7 @@ from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.fairground.metadata.extractor import extract_metadata
-from dataset_extraction.graph_builder.process_usages import enqueue_used_datasets
+from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
 from dataset_extraction.usage.nodes import UsageNodes
 from dataset_extraction.log import setup_logging
