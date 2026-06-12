@@ -21,8 +21,8 @@ from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
 from dataset_extraction.graph_builder.build import _already_seen, build
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes, UsageNodes
-from dataset_extraction.state.nodes import UsageNode
+from dataset_extraction.state.graph import DatasetNodes, DatasetPaperNodes, PaperInfoNodes
+from dataset_extraction.usage.nodes import UsageNode, UsageNodes
 from dataset_extraction.state.paper import PdfInfo, PaperInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.extractor import extract_and_save_usages

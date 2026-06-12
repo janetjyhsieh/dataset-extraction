@@ -7,8 +7,7 @@ from typing import Union
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.state.graph import UsageNodes
-from dataset_extraction.state.nodes import UsageNode
+from dataset_extraction.usage.nodes import UsageNode, UsageNodes
 from dataset_extraction.utils import load_title_map
 
 from .usages import UsageExtractionResult
