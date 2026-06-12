@@ -19,7 +19,8 @@ from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.fairground.metadata.extractor import extract_metadata
-from dataset_extraction.graph_builder.process_usages import enqueue_used_datasets, extract_and_save_usages
+from dataset_extraction.graph_builder.process_usages import enqueue_used_datasets
+from dataset_extraction.usage.extractor import extract_and_save_usages
 from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes, UsageNodes
 from dataset_extraction.state.nodes import MetadataNode
@@ -80,7 +81,7 @@ def main() -> None:
     usages_path = working_dir / "state" / "usages.json"
     usage_nodes = UsageNodes(usages_path)
     if not usages_path.exists():
-        logger.info("No usages.json found — running usage extraction")
+        logger.info("No usages.json found — running usage extraction") # TODO: should run this regardless, in case some havent been extracted
         extract_and_save_usages(working_dir, client, usage_nodes)
     else:
         logger.info("Skipping usage extraction (usages.json already exists)")
@@ -88,13 +89,13 @@ def main() -> None:
     paper_info_db = PaperInfoNodes(working_dir / "fg" / "state" / "paper_info_nodes.json")
     queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "fg" / "state" / "dataset_queue.jsonl")
 
-    if args.repopulate_queue:
+    if args.repopulate_queue: # TODO: think about this
         for paper in paper_info_db.all():
             if paper.pdf_info.download_success and paper.pdf_info.pdf_file_path:
                 queue.enqueue(DatasetJob(title=paper.canonical_title, pdf_path=paper.pdf_info.pdf_file_path))
         logger.info("Repopulated queue with %d paper(s) from paper_info", len(queue))
     else:
-        enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
+        enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir) # TODO: should keep a title to filepath to avoid having to re-download
 
     metadata_db = MetadataNodes(run_dir / "metadata_nodes.json")
     extract_and_save_metadata(queue, client, metadata_db)
