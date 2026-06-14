@@ -19,22 +19,47 @@ from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.fairground.metadata.extractor import extract_metadata
+from dataset_extraction.fairground.metadata.metadata import MetadataExtractionResult
 from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
 from dataset_extraction.usage.nodes import UsageNodes
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes
+from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes, DatasetPaperNodes
 from dataset_extraction.state.nodes import MetadataNode
-from dataset_extraction.state.paper import canonicalize_title
+from dataset_extraction.state.paper import canonicalize_title, DatasetPaperNode
 from dataset_extraction.state.queue import DatasetJob, Queue
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
+
+def save_dataset_paper(
+    canonical_title: str,
+    dataset_ids: List[str],
+    dataset_paper_db: DatasetPaperNodes
+) -> DatasetPaperNode:
+    dp = DatasetPaperNode(title=canonical_title, datasets=dataset_ids)
+    dataset_paper_db.insert(dp)
+    return dp
+
+def save_metadata(
+    result: MetadataExtractionResult, 
+    canonical_title: str,
+    metadata_db: MetadataNodes,
+) -> List[str]:
+    dataset_ids = []
+    for dataset_metadata in result.datasets:
+        data = dataset_metadata.model_dump()
+        data["paper_title"] = canonical_title
+        metadata = MetadataNode(**data)
+        dataset_ids.append(metadata.dataset_id)
+        metadata_db.upsert(metadata)
+    return dataset_ids
 
 
 def extract_and_save_metadata(
     queue: Queue[DatasetJob],
     client,
     metadata_db: MetadataNodes,
+    dataset_paper_db: DatasetPaperNodes,
 ) -> None:
     while len(queue) > 0:
         job = queue.peek()
@@ -45,11 +70,13 @@ def extract_and_save_metadata(
             logger.exception("Metadata extraction failed for %s", job.title)
             queue.dequeue()
             continue
-        data = result.model_dump()
-        data["paper_title"] = canonicalize_title(result.paper_title)
-        metadata_db.upsert(MetadataNode(**data))
+        # data = result.model_dump()
+        canonical_title = canonicalize_title(result.paper_title)
+        dataset_ids = save_metadata(result, canonical_title, metadata_db)
+        save_dataset_paper(canonical_title, dataset_ids, dataset_paper_db)
         queue.dequeue()
         logger.info("Saved %d dataset(s) from %s", len(result.datasets), job.title)
+        break
 
 
 def main() -> None:
@@ -63,11 +90,13 @@ def main() -> None:
 
     working_dir = Path(args.working_dir)
     (working_dir / "fg" / "state").mkdir(parents=True, exist_ok=True)
+    databases_dir = working_dir / "fg" / "databases"
+    databases_dir.mkdir(parents=True, exist_ok=True)
     now = datetime.now()
     run_dir = working_dir / "fg" / now.strftime("%Y-%m-%d") / now.strftime("%H-%M-%S")
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    setup_logging(run_dir / "logs")
+    setup_logging(working_dir / "fg" / "logs")
 
     kwargs = {} if args.model is None else {"model": args.model}
     if args.provider == "claude":
@@ -98,10 +127,11 @@ def main() -> None:
     else:
         enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir) # TODO: should keep a title to filepath to avoid having to re-download
 
-    metadata_db = MetadataNodes(run_dir / "metadata_nodes.json")
-    extract_and_save_metadata(queue, client, metadata_db)
+    dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
+    metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
+    extract_and_save_metadata(queue, client, metadata_db, dataset_paper_db)
 
-    logger.info("Done. Results in %s", run_dir)
+    logger.info("Done. Results in %s", working_dir)
 
 
 if __name__ == "__main__":
