@@ -76,7 +76,6 @@ def extract_and_save_metadata(
         save_dataset_paper(canonical_title, dataset_ids, dataset_paper_db)
         queue.dequeue()
         logger.info("Saved %d dataset(s) from %s", len(result.datasets), job.title)
-        break
 
 
 def main() -> None:
