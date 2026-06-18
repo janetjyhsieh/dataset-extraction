@@ -85,7 +85,10 @@ def _fetch_url(args: dict) -> str:
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+            content = resp.read(10 * 1024 * 1024 + 1)
+            if len(content) > 10 * 1024 * 1024:
+                return "Error: response exceeds 10 MB limit."
+            return content.decode("utf-8", errors="replace")
     except urllib.error.URLError as e:
         return f"Fetch failed: {e}"
 
