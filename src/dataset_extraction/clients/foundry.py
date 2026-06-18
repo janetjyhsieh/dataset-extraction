@@ -3,8 +3,12 @@ from __future__ import annotations
 import base64
 import json
 import os
+import random
+import time
 from pathlib import Path
+from typing import Any, Callable
 
+import openai
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
@@ -70,3 +74,80 @@ class FoundryClient:
             },
         )
         return None, json.loads(response.output_text)
+
+    def _create_with_backoff(self, max_retries: int = 5, base_delay: float = 1.0, **kwargs) -> Any:
+        for attempt in range(max_retries):
+            try:
+                return self._client.responses.create(**kwargs)
+            except openai.RateLimitError:
+                if attempt == max_retries - 1:
+                    raise
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                time.sleep(delay)
+
+    def run_agent(
+        self,
+        prompt: str,
+        tools: list[dict],
+        tool_handlers: dict[str, Callable[[dict], str]],
+        output_schema: dict,
+        max_tool_calls: int = 20,
+    ) -> Any:
+        """Run an agentic loop until the model calls `extract_result`.
+
+        The model may call any tool in *tools* any number of times. Once it is
+        satisfied, it calls the implicit `extract_result` tool whose schema is
+        derived from *output_schema*. That call's arguments are returned as a
+        plain dict for the caller to validate.
+
+        Returns:
+            The parsed arguments dict from the model's `extract_result` call.
+
+        Raises:
+            RuntimeError: If the agent exceeds *max_tool_calls* without finishing.
+        """
+        extract_tool = {
+            "type": "function",
+            "name": "extract_result",
+            "description": (
+                "Output the final structured result once you have gathered all "
+                "available information from the landing page."
+            ),
+            "parameters": _make_strict(output_schema),
+            "strict": True,
+        }
+        all_tools = tools + [extract_tool]
+
+        response = self._create_with_backoff(
+            model=self.model,
+            input=[{"role": "user", "content": prompt}],
+            tools=all_tools,
+        )
+
+        for _ in range(max_tool_calls):
+            tool_calls = [item for item in response.output if item.type == "function_call"]
+
+            if not tool_calls:
+                return json.loads(response.output_text)
+
+            results = []
+            for call in tool_calls:
+                args = json.loads(call.arguments)
+                if call.name == "extract_result":
+                    return args
+                handler = tool_handlers.get(call.name)
+                result = handler(args) if handler else f"Unknown tool: {call.name}"
+                results.append({
+                    "type": "function_call_output",
+                    "call_id": call.call_id,
+                    "output": result,
+                })
+
+            response = self._create_with_backoff(
+                model=self.model,
+                previous_response_id=response.id,
+                input=results,
+                tools=all_tools,
+            )
+
+        raise RuntimeError(f"Agent exceeded {max_tool_calls} tool calls without finishing.")
