@@ -6,6 +6,7 @@ from typing import Generic, Type, TypeVar
 from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
+from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResult
 from dataset_extraction.state.nodes import DatasetNode, MetadataNode
 from dataset_extraction.state.paper import DatasetPaperNode, PaperInfo, PdfInfo
 
@@ -111,3 +112,10 @@ class MetadataNodes(_NodeStore[MetadataNode]):
 
     def __init__(self, db_path: str | Path) -> None:
         super().__init__(db_path, MetadataNode, "dataset_id")
+
+
+class WebpageNodes(_NodeStore[WebsiteExtractionResult]):
+    """Persistent store for webpage extraction results, keyed by URL."""
+
+    def __init__(self, db_path: str | Path) -> None:
+        super().__init__(db_path, WebsiteExtractionResult, "url")

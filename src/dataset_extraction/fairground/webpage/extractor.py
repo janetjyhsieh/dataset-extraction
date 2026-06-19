@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from dataset_extraction.clients.foundry import DEFAULT_MODEL, FoundryClient
@@ -53,6 +54,8 @@ IMPORTANT:
 - For every non-null field, record the URL where you found the evidence and a verbatim quote. \
 Unrelated details within a quote may be omitted with [...].
 - One entry in `datasets_info` per dataset listed above.
+- When you have gathered all available information, you MUST call the `extract_result` tool \
+to submit your final answer. Do not return JSON as plain text.
 """
 
 _FETCH_TOOL = {
@@ -75,8 +78,17 @@ _FETCH_TOOL = {
 }
 
 
+def _normalize_url(url: str) -> str:
+    """Percent-encode non-ASCII characters in URL path/query so urllib can send it."""
+    p = urllib.parse.urlparse(url)
+    return urllib.parse.urlunparse(p._replace(
+        path=urllib.parse.quote(p.path, safe="/:@!$&'()*+,;=~"),
+        query=urllib.parse.quote(p.query, safe="=&+%"),
+    ))
+
+
 def _fetch_url(args: dict) -> str:
-    url = args["url"]
+    url = _normalize_url(args["url"])
     if url.lower().endswith((".pdf", ".zip", ".tar", ".gz", ".tar.gz")):
         return "Error: cannot fetch binary file types with this tool."
     req = urllib.request.Request(
@@ -85,9 +97,9 @@ def _fetch_url(args: dict) -> str:
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            content = resp.read(10 * 1024 * 1024 + 1)
-            if len(content) > 10 * 1024 * 1024:
-                return "Error: response exceeds 10 MB limit."
+            content = resp.read(1 * 1024 * 1024 + 1)
+            if len(content) > 1 * 1024 * 1024:
+                return "Error: response exceeds 1 MB limit."
             return content.decode("utf-8", errors="replace")
     except urllib.error.URLError as e:
         return f"Fetch failed: {e}"
@@ -113,5 +125,6 @@ def extract_webpage(
         tools=[_FETCH_TOOL],
         tool_handlers={"fetch_webpage": _fetch_url},
         output_schema=WebsiteExtractionResult.model_json_schema(),
+        max_tool_calls=6
     )
     return WebsiteExtractionResult.model_validate(result)
