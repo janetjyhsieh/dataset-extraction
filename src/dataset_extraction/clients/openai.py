@@ -10,6 +10,10 @@ DEFAULT_MODEL = "gpt-5"
 
 
 def _make_strict(schema: dict) -> dict:
+    # $ref cannot have sibling keywords in OpenAI strict mode.
+    if "$ref" in schema:
+        return {"$ref": schema["$ref"]}
+
     schema = {k: v for k, v in schema.items() if k != "default"}
 
     if schema.get("type") == "object" or "properties" in schema:

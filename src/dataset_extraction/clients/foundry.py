@@ -128,7 +128,10 @@ class FoundryClient:
             tool_calls = [item for item in response.output if item.type == "function_call"]
 
             if not tool_calls:
-                return json.loads(response.output_text)
+                text = response.output_text
+                if not text:
+                    raise RuntimeError("Agent returned empty response without calling any tool")
+                return json.loads(text)
 
             results = []
             for call in tool_calls:
