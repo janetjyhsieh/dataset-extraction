@@ -13,7 +13,6 @@ class Evidence(BaseModel):
 
 class DatasetMetadata(BaseModel):
     official_dataset_name: str = Field(description="Official dataset name as introduced, including version if a specific version is identified.")
-    dataset_page: str | None = Field(description="URL to the public dataset release as reported in the paper; prefer the official project/landing page if several links are given. null if no public release URL is reported.")
     descriptions: str | None = Field(description="3–6 sentence free-text field covering, where determinable: (1) aim/purpose of the dataset; (2) high-level description of available features; (3) labeling procedure for annotated attributes, with attention to sensitive ones; (4) the envisioned ML task. Note any aspect that is unspecified rather than fabricating it.")
     years_data: str | None = Field(description="Temporal coverage of the data content ('social realities'): a single year (e.g. '1994'), a continuous span (e.g. '1994-1996'), or semicolon-separated non-contiguous years (e.g. '1994; 1997'). null if not applicable (e.g. synthetic data with no temporal referent).")
     data_license: str | None = Field(description="The license under which the dataset is made available, named exactly as stated (e.g. 'CC-BY-4.0'). null if no formal license is found anywhere in the paper.")
@@ -29,5 +28,6 @@ class DatasetMetadata(BaseModel):
 class MetadataExtractionResult(BaseModel):
     paper_title: str = Field(description="Full paper title.")
     first_author_name: str = Field(description="Last, First — use the first name appearing in the author list.")
+    project_page: str | None = Field(description="URL to the project web page as reported in the paper; prefer the official project/landing page if several links are given. null if no public release URL is reported.")
     documents_dataset: bool = Field(description="True if the paper introduces, constructs, curates, or makes available a dataset as a central artifact. False if no qualifying dataset is documented.")
     datasets: list[DatasetMetadata] = Field(description="One entry per distinct qualifying dataset. Empty array if documents_dataset is false.")
