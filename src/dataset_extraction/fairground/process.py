@@ -69,11 +69,12 @@ def extract_and_save_metadata(
             logger.exception("Metadata extraction failed for %s", job.title)
             queue.dequeue()
             continue
-        # data = result.model_dump()
         canonical_title = job.title
         dataset_ids = save_metadata(result, canonical_title, metadata_db)
         save_dataset_paper(canonical_title, dataset_ids, dataset_paper_db)
         queue.dequeue()
+
+        # TODO: Process link
         logger.info("Saved %d dataset(s) from %s", len(result.datasets), canonical_title)
 
 

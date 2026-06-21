@@ -73,3 +73,4 @@ class DatasetPaperNode(BaseModel):
     datasets: list[str] = []  # dataset_id values
     source_papers_titles: list[str] = []
     source_processed: bool = False
+    link_processed: bool = False
