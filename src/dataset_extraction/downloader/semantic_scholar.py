@@ -10,7 +10,7 @@ from dataset_extraction.downloader.utils import titles_match
 logger = logging.getLogger(__name__)
 
 _SEARCH_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
-_FIELDS = "title,openAccessPdf,externalIds,year,authors,venue"
+_FIELDS = "title,openAccessPdf,externalIds,year,authors,venue,paperId"
 _RETRYABLE = {429, 503}
 
 
@@ -22,6 +22,7 @@ class S2Paper:
     authors: list[str]
     open_access_pdf: str | None
     external_ids: dict[str, str] = field(default_factory=dict)
+    search_engine_id: str | None = None
 
 
 class SemanticScholarClient:
@@ -74,6 +75,7 @@ class SemanticScholarClient:
                     authors=[a["name"] for a in (raw.get("authors") or []) if a.get("name")],
                     open_access_pdf=pdf_info.get("url"),
                     external_ids=raw.get("externalIds") or {},
+                    search_engine_id=raw.get("paperId"),
                 )
         except Exception:
             logger.debug("S2 error for %r", title, exc_info=True)

@@ -12,7 +12,7 @@ from dataset_extraction.downloader.arxiv import ArxivClient
 from dataset_extraction.downloader.semantic_scholar import SemanticScholarClient
 from dataset_extraction.downloader.utils import titles_match
 from dataset_extraction.downloader.venues import pdf_from_venue, venue_source
-from dataset_extraction.state.paper import PaperInfo, PdfDownloadSource
+from dataset_extraction.state.paper import PaperInfo, PdfDownloadSource, SearchEngineId, SearchEngineSource
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +43,14 @@ def _pdf_from_external_ids(external_ids: dict) -> str | None:
     return None
 
 
-def _search_arxiv(title: str) -> str | None:
+def _search_arxiv(title: str) -> tuple[str, str] | None:
+    """Return (pdf_url, arxiv_id) for the first matching result, or None."""
     for result in _arxiv_client.search_by_title(title):
         match = titles_match(title, result["title"])
         logger.debug("arXiv result: %r  id: %s  match: %s", result["title"], result["id"], match)
         if match:
-            return result["pdf_url"]
+            arxiv_id = result["id"].split("/abs/")[-1].split("v")[0]
+            return result["pdf_url"], arxiv_id
     return None
 
 
@@ -101,6 +103,7 @@ def find_and_download_pdf(
 
     pdf_url: str | None = None
     pdf_source: PdfDownloadSource | None = None
+    search_engine_id: SearchEngineId | None = None
 
     # Stage 1 & 2: Semantic Scholar
     s2_paper = _s2_client.get_paper(title)
@@ -108,6 +111,8 @@ def find_and_download_pdf(
         node.year = s2_paper.year
         node.venue = s2_paper.venue
         node.authors = s2_paper.authors
+        if s2_paper.search_engine_id:
+            search_engine_id = SearchEngineId(source=SearchEngineSource.semantic_scholar, id=s2_paper.search_engine_id)
 
         if s2_paper.open_access_pdf:
             pdf_url = s2_paper.open_access_pdf
@@ -138,9 +143,12 @@ def find_and_download_pdf(
         logger.debug("Falling back to arXiv search for %r", title)
         result = _search_arxiv(title)
         if result:
-            pdf_url = result
+            pdf_url, arxiv_id = result
             pdf_source = PdfDownloadSource.arxiv
+            if search_engine_id is None:
+                search_engine_id = SearchEngineId(source=SearchEngineSource.arxiv, id=arxiv_id)
 
+    node.search_engine_id = search_engine_id
     node.pdf_info.link_found = pdf_url is not None
     node.pdf_info.url = pdf_url
     node.pdf_info.pdf_download_source = pdf_source

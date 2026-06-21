@@ -5,7 +5,6 @@ Metadata results are written to working_dir/fg/yyyy-mm-dd/hh-mm-ss/.
 
 Usage:
     python -m dataset_extraction.fairground.process --working-dir papers/
-    python -m dataset_extraction.fairground.process --working-dir papers/ --provider foundry
 """
 
 from __future__ import annotations
@@ -81,7 +80,6 @@ def extract_and_save_metadata(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--working-dir", required=True, help="Directory containing pdfs/ and state/")
-    parser.add_argument("--provider", choices=["claude", "openai", "foundry"], default="foundry")
     parser.add_argument("--model", default=None, help="Model ID (default: provider's default)")
     parser.add_argument("--reasoning-effort", choices=["low", "medium", "high"], default=None, help="Reasoning effort (foundry only)")
     parser.add_argument("--repopulate-queue", action="store_true", help="Re-enqueue all paper_info entries and run metadata extraction")
@@ -98,14 +96,9 @@ def main() -> None:
     setup_logging(working_dir / "fg" / "logs")
 
     kwargs = {} if args.model is None else {"model": args.model}
-    if args.provider == "claude":
-        client = ClaudeClient(**kwargs)
-    elif args.provider == "openai":
-        client = OpenAIClient(**kwargs)
-    else:
-        if args.reasoning_effort is not None:
-            kwargs["reasoning_effort"] = args.reasoning_effort
-        client = FoundryClient(**kwargs)
+    if args.reasoning_effort is not None:
+        kwargs["reasoning_effort"] = args.reasoning_effort
+    client = FoundryClient(**kwargs)
 
     usages_path = working_dir / "state" / "usages.json"
     usage_nodes = UsageNodes(usages_path)
@@ -124,8 +117,7 @@ def main() -> None:
                 queue.enqueue(DatasetJob(title=paper.canonical_title, pdf_path=paper.pdf_info.pdf_file_path))
         logger.info("Repopulated queue with %d paper(s) from paper_info", len(queue))
     else:
-        enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir) # TODO: should keep a title to filepath to avoid having to re-download
-
+        enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
     dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
     metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
     extract_and_save_metadata(queue, client, metadata_db, dataset_paper_db)
