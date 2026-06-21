@@ -52,13 +52,18 @@ class FoundryClient:
         )
         return response.output_text
 
-    def send_text_structured(self, prompt: str, schema: dict) -> dict:
+    def send_text_structured(
+        self,
+        prompt: str,
+        schema: dict,
+        previous_response_id: str | None = None,
+    ) -> tuple[dict, str]:
         schema_name = schema.get("title", "output")
-        response = self._client.responses.create(
-            model=self.model,
-            input=[{"role": "user", "content": prompt}],
+        kwargs: dict = {
+            "model": self.model,
+            "input": [{"role": "user", "content": prompt}],
             **self._reasoning_kwargs(),
-            text={
+            "text": {
                 "format": {
                     "type": "json_schema",
                     "name": schema_name,
@@ -66,8 +71,11 @@ class FoundryClient:
                     "strict": True,
                 }
             },
-        )
-        return json.loads(response.output_text)
+        }
+        if previous_response_id is not None:
+            kwargs["previous_response_id"] = previous_response_id
+        response = self._client.responses.create(**kwargs)
+        return json.loads(response.output_text), response.id
 
     def send_pdf_structured(
         self,

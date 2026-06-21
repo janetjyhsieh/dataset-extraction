@@ -83,6 +83,7 @@ def run(working_dir: Path, model: str = DEFAULT_MODEL) -> None:
                 logger.warning("DatasetNode %r not found", dataset_id)
                 continue
             official_datasets.append({
+                "id": dataset_id,
                 "name": node.official_dataset_name,
                 "description": node.descriptions,
             })
@@ -100,11 +101,18 @@ def run(working_dir: Path, model: str = DEFAULT_MODEL) -> None:
 
         try:
             result = map_datasets(usage_dataset, official_datasets, model=model)
-            output[doc_id] = result.model_dump()
-            logger.info("Usage %s → %r (confidence=%.2f)", doc_id, result.choice, result.confidence)
         except Exception:
             logger.exception("map_datasets failed for usage %s", doc_id)
             output[doc_id] = None
+            _save_output(output_path, output)
+            continue
+
+        if result is None:
+            logger.warning("Usage %s — mapper returned invalid choice after retry, skipping", doc_id)
+            output[doc_id] = None
+        else:
+            output[doc_id] = result.model_dump()
+            logger.info("Usage %s → %r dataset_id=%s (confidence=%.2f)", doc_id, result.choice, result.dataset_id, result.confidence)
 
         _save_output(output_path, output)
 
