@@ -121,6 +121,7 @@
     - For most fields, if a value cannot be determined from the paper, use null. Never use
       empty strings. The following fields have field-specific empty-state rules that OVERRIDE
       this default — apply them exactly:
+        - `project_page`: null if the authors do not report a project URL.
         - `years_data`: null if not applicable (e.g. synthetic data with no temporal referent).
         - `license`: null if no formal license is found anywhere in the paper.
         - `continents`: null if not applicable (e.g. synthetic) OR applicable but not reported.
@@ -129,7 +130,6 @@
           empty states are distinct and must not be merged.
         - `protected_attributes`: null if the authors do not designate any attribute as
           protected or sensitive.
-        - `dataset_page`: null if the authors do not report a public release URL.
     - Formats:
         - `years_data`: a single year ("1994"), a continuous span ("1994-1996"), or
           non-contiguous years separated by semicolons ("1994; 1997").
@@ -141,9 +141,6 @@
         - `attributes` / `protected_attributes`: arrays of attribute names. If an attribute
           set is very large, you may instead give a faithful summary string of the categories
           with the total count.
-        - `dataset_page`: a single URL string. If the paper reports multiple links, prefer
-          the official project/landing page for the public release over a raw download or
-          mirror link.
     - `protected_attributes` must contain ONLY attributes the authors themselves characterize
       as protected, sensitive, demographic-for-fairness, or equivalent. Do NOT infer
       membership from legal protected-class frameworks, and do NOT promote attributes into
