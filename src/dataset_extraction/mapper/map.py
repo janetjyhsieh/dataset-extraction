@@ -33,7 +33,7 @@ information given cannot separate them.
 """
 
 
-class WebsiteExtractionResult(BaseModel):
+class MapperExtractionResult(BaseModel):
     choice: str = Field(description="The exact name of the matched dataset, or 'NONE' if no candidate fits, or 'AMBIGUOUS' if two or more candidates fit equally.")
     confidence: float = Field(description="Confidence score between 0 and 1.")
     reasoning: str = Field(description="One or two sentences explaining the match decision.")
@@ -43,7 +43,7 @@ def map_datasets(
     usage_dataset: dict,
     official_datasets: list[dict],
     model: str = DEFAULT_MODEL,
-) -> WebsiteExtractionResult:
+) -> MapperExtractionResult:
     dataset_list = "\n".join(
         f"[{d['name']}]: {d.get('description', '')}"
         for d in official_datasets
