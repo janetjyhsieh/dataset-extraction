@@ -156,8 +156,7 @@ def extract_webpage(
     matched_infos, matched_indices = _validate_and_fix(website_result, dataset_names)
     if not matched_infos:
         msg = f"No dataset names matched for {url!r}. Expected: {dataset_names}."
-        logger.error(msg)
-        raise ValueError(msg)
+        logger.warning(msg)
     if len(matched_infos) < len(dataset_names):
         unmatched = [n for i, n in enumerate(dataset_names) if i not in matched_indices]
         logger.warning("Partial match (%d/%d) for %r — no info for: %s", len(matched_info), len(dataset_names), url, unmatched)

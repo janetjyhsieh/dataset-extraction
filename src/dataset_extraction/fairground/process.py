@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
 from pathlib import Path
 
 from dataset_extraction.clients.claude import ClaudeClient
@@ -174,6 +173,77 @@ def extract_and_save(
         dataset_paper_db.update(dataset_paper)
 
 
+def verify_databases(
+    metadata_db: MetadataNodes,
+    dataset_paper_db: DatasetPaperNodes,
+    dataset_website_db: DatasetWebsiteNodes,
+    project_page_db: ProjectPageNodes,
+) -> None:
+    errors = []
+
+    # 1. All DatasetPaperNode dataset_ids exist as MetadataNodes
+    for dp in dataset_paper_db.all():
+        for did in dp.datasets:
+            if not metadata_db.exists(did):
+                errors.append(
+                    f"[DatasetPaper→Metadata] {dp.title!r}: dataset_id {did!r} missing from metadata_db"
+                )
+
+    # 2. All DatasetPaperNodes with a project_page have link_processed = True
+    for dp in dataset_paper_db.all():
+        if dp.project_page and not dp.link_processed:
+            errors.append(f"[DatasetPaper.link_processed] {dp.title!r}: has project_page but link_processed is False")
+
+    # Build paper_title → set of dataset_ids from DatasetWebsiteNodes
+    website_ids_by_paper: dict[str, set[str]] = {}
+    for dw in dataset_website_db.all():
+        website_ids_by_paper.setdefault(dw.paper_title, set()).add(dw.dataset_id)
+
+    for pp in project_page_db.all():
+        dp = dataset_paper_db.get(pp.paper_title)
+        if dp is None:
+            errors.append(f"[ProjectPage→DatasetPaper] {pp.paper_title!r}: no DatasetPaperNode found")
+            continue
+        dp_ids = set(dp.datasets)
+        web_ids = website_ids_by_paper.get(pp.paper_title, set())
+
+        # 3. ProjectPage's DatasetWebsiteNodes are a subset of DatasetPaperNode's datasets
+        extra = web_ids - dp_ids
+        if extra:
+            errors.append(
+                f"[DatasetWebsite⊄DatasetPaper] {pp.paper_title!r}: DatasetWebsiteNodes contain dataset_ids not in DatasetPaperNode: {extra}"
+            )
+
+    if errors:
+        for e in errors:
+            logger.warning("DB verify: %s", e)
+        logger.warning("Database verification found %d issue(s).", len(errors))
+        raise ValueError("Database verification failed with %d issue(s).", len(errors))
+    else:
+        logger.info("Database verification passed.")
+
+
+def process_unprocessed_links(
+    client,
+    metadata_db: MetadataNodes,
+    dataset_paper_db: DatasetPaperNodes,
+    dataset_website_db: DatasetWebsiteNodes,
+    project_page_db: ProjectPageNodes,
+) -> None:
+    for dataset_paper in dataset_paper_db.all():
+        if not dataset_paper.link_processed:
+            logger.info("Processing unprocessed link for %s", dataset_paper.title)
+            try:
+                extract_and_save_website_metadata(
+                    dataset_paper, metadata_db, dataset_website_db, project_page_db, client
+                )
+            except Exception:
+                logger.exception("Website extraction failed for %s", dataset_paper.title)
+                continue
+            dataset_paper.link_processed = True
+            dataset_paper_db.update(dataset_paper)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--working-dir", required=True, help="Directory containing pdfs/ and state/")
@@ -186,9 +256,6 @@ def main() -> None:
     (working_dir / "fg" / "state").mkdir(parents=True, exist_ok=True)
     databases_dir = working_dir / "fg" / "databases"
     databases_dir.mkdir(parents=True, exist_ok=True)
-    now = datetime.now()
-    run_dir = working_dir / "fg" / now.strftime("%Y-%m-%d") / now.strftime("%H-%M-%S")
-    run_dir.mkdir(parents=True, exist_ok=True)
 
     setup_logging(working_dir / "fg" / "logs")
 
@@ -219,7 +286,10 @@ def main() -> None:
     metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
     dataset_website_db = DatasetWebsiteNodes(databases_dir / "dataset_website_nodes.json")
     project_page_db = ProjectPageNodes(databases_dir / "project_page_nodes.json")
+    
     extract_and_save(queue, client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
+    process_unprocessed_links(client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
+    verify_databases(metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
 
     logger.info("Done. Results in %s", working_dir)
 
