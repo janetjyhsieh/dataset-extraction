@@ -89,8 +89,58 @@ def save_project_website(
     )
     project_page_db.insert(pw)
 
+def extract_and_save_pdf_metadata(
+    job: DatasetJob,
+    metadata_db: MetadataNodes,
+    dataset_paper_db: DatasetPaperNodes,
+    client
+) -> DatasetPaperNode:
+    logger.info("Extracting metadata from %s", job.title)
+    try:
+        result = extract_metadata(job.pdf_path, client)
+    except Exception:
+        logger.exception("PDF metadata extraction failed for %s", job.title)
+        raise
+    canonical_title = job.title
+    dataset_ids = save_metadata(result, canonical_title, metadata_db)
+    dataset_paper = save_dataset_paper(
+        result, canonical_title, dataset_ids, dataset_paper_db
+    )
+    logger.info("Saved %d dataset(s) from %s", len(result.datasets), job.title)
+    return dataset_paper
 
-def extract_and_save_metadata(
+def extract_and_save_website_metadata(
+    dataset_paper: DatasetPaperNode,
+    metadata_db: MetadataNodes,
+    dataset_website_db: DatasetWebsiteNodes,
+    project_page_db: ProjectPageNodes,
+    client
+) -> None:
+    if dataset_paper.project_page:
+        #TODO: this can be a function of the database. This is also used in mapper
+        # datasets = [
+        #     (did, metadata_db.get(did).official_dataset_name)
+        #     for did in dataset_paper.datasets
+        # ]
+        dataset_names = [
+            metadata_db.get(did).official_dataset_name
+            for did in dataset_paper.datasets
+        ]
+        title = dataset_paper.title
+        try:
+            result = extract_webpage(dataset_paper.project_page, title, 
+            dataset_names, model=client.model)
+        except Exception:
+            logger.exception("Website extraction failed for %s", title)
+            raise
+        dataset_ids = save_dataset_website(
+            result, title, dataset_paper.datasets, dataset_website_db
+        )
+        save_project_website(title, result, project_page_db)
+        logger.info("Saved website metadata for %s", title)
+
+
+def extract_and_save(
     queue: Queue[DatasetJob],
     client,
     metadata_db: MetadataNodes,
@@ -100,38 +150,24 @@ def extract_and_save_metadata(
 ) -> None:
     while len(queue) > 0:
         job = queue.peek()
-        logger.info("Extracting metadata from %s", job.title)
         try:
-            result = extract_metadata(job.pdf_path, client)
-        except Exception:
-            logger.exception("Metadata extraction failed for %s", job.title)
-            queue.dequeue() #TODO: re-enqueue?
-            continue
-        canonical_title = job.title
-        dataset_ids = save_metadata(result, canonical_title, metadata_db)
-        dataset_paper = save_dataset_paper(
-            result, canonical_title, dataset_ids, dataset_paper_db
-        )
-        queue.dequeue()
-
-        logger.info("Saved %d dataset(s) from %s", len(result.datasets), canonical_title)
-
-        if dataset_paper.project_page:
-            #TODO: this can be a function of the database. This is also used in mapper
-            dataset_names = [dataset_metadata.official_dataset_name for dataset_metadata in result.datasets]
-            try:
-                result = extract_webpage(dataset_paper.project_page, canonical_title, 
-                dataset_names, model=client.model)
-            except Exception:
-                logger.exception("Website extraction failed for %s", job.title)
-                continue
-            dataset_ids = save_dataset_website(
-                result, canonical_title, dataset_ids, dataset_website_db
+            dataset_paper = extract_and_save_pdf_metadata(
+                job, metadata_db, dataset_paper_db, client
             )
-            save_project_website(canonical_title, result, project_page_db)
-            dataset_paper.link_processed=True
-            dataset_paper_db.update(dataset_paper)
-            
+        except Exception:
+            queue.dequeue()
+            queue.enqueue(job)
+            continue
+        else:
+            queue.dequeue()
+
+        # Step 2: extract website metadata
+        extract_and_save_website_metadata(
+            dataset_paper, metadata_db, dataset_website_db, project_page_db,
+            client
+        )
+        dataset_paper.link_processed=True
+        dataset_paper_db.update(dataset_paper)
 
 
 def main() -> None:
@@ -179,7 +215,7 @@ def main() -> None:
     metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
     dataset_website_db = DatasetWebsiteNodes(databases_dir / "dataset_website_nodes.json")
     project_page_db = ProjectPageNodes(databases_dir / "project_page_nodes.json")
-    extract_and_save_metadata(queue, client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
+    extract_and_save(queue, client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
 
     logger.info("Done. Results in %s", working_dir)
 
