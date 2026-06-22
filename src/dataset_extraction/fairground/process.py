@@ -128,13 +128,14 @@ def extract_and_save_website_metadata(
         ]
         title = dataset_paper.title
         try:
-            result = extract_webpage(dataset_paper.project_page, title, 
+            result, matched_indices = extract_webpage(dataset_paper.project_page, title,
             dataset_names, model=client.model)
         except Exception:
             logger.exception("Website extraction failed for %s", title)
             raise
+        matched_dataset_ids = [dataset_paper.datasets[i] for i in matched_indices]
         dataset_ids = save_dataset_website(
-            result, title, dataset_paper.datasets, dataset_website_db
+            result, title, matched_dataset_ids, dataset_website_db
         )
         save_project_website(title, result, project_page_db)
         logger.info("Saved website metadata for %s", title)
@@ -162,10 +163,13 @@ def extract_and_save(
             queue.dequeue()
 
         # Step 2: extract website metadata
-        extract_and_save_website_metadata(
-            dataset_paper, metadata_db, dataset_website_db, project_page_db,
-            client
-        )
+        try:
+            extract_and_save_website_metadata(
+                dataset_paper, metadata_db, dataset_website_db, project_page_db,
+                client
+            )
+        except Exception:
+            continue
         dataset_paper.link_processed=True
         dataset_paper_db.update(dataset_paper)
 

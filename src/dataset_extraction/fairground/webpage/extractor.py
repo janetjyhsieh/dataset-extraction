@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import urllib.error
 import urllib.parse
 import urllib.request
 
 from dataset_extraction.clients.foundry import DEFAULT_MODEL, FoundryClient
+
+logger = logging.getLogger(__name__)
 
 from .webpage import WebsiteExtractionResult
 
@@ -53,7 +56,8 @@ IMPORTANT:
 - Do not fabricate answers. If you cannot verify a field from the pages you fetched, use null.
 - For every non-null field, record the URL where you found the evidence and a verbatim quote. \
 Unrelated details within a quote may be omitted with [...].
-- One entry in `datasets_info` per dataset listed above.
+- You MUST output exactly one entry in `datasets_info` per dataset listed above, in the same \
+order. The `dataset_name` field must be copied exactly as written above.
 - When you have gathered all available information, you MUST call the `extract_result` tool \
 to submit your final answer. Do not return JSON as plain text.
 """
@@ -105,12 +109,33 @@ def _fetch_url(args: dict) -> str:
         return f"Fetch failed: {e}"
 
 
+def _normalize(s: str) -> str:
+    return s.lower().strip()
+
+
+def _validate_and_fix(
+    result: WebsiteExtractionResult, dataset_names: list[str]
+) -> tuple[list, list[int]]:
+    """Return (matched_infos, matched_indices) for entries whose dataset_name matches a canonical name."""
+    canonical = {_normalize(n): (i, n) for i, n in enumerate(dataset_names)}
+    matched_infos = []
+    matched_indices = []
+    for info in result.datasets_info:
+        match = canonical.get(_normalize(info.dataset_name))
+        if match is not None:
+            idx, exact = match
+            info.dataset_name = exact
+            matched_infos.append(info)
+            matched_indices.append(idx)
+    return matched_infos, matched_indices
+
+
 def extract_webpage(
     url: str,
     paper_title: str,
     dataset_names: list[str],
     model: str = DEFAULT_MODEL,
-) -> WebsiteExtractionResult:
+) -> tuple[WebsiteExtractionResult, list[int]]:
     client = FoundryClient(model=model)
 
     prompt = (
@@ -125,6 +150,16 @@ def extract_webpage(
         tools=[_FETCH_TOOL],
         tool_handlers={"fetch_webpage": _fetch_url},
         output_schema=WebsiteExtractionResult.model_json_schema(),
-        max_tool_calls=6
+        max_tool_calls=6,
     )
-    return WebsiteExtractionResult.model_validate(result)
+    website_result = WebsiteExtractionResult.model_validate(result)
+    matched_infos, matched_indices = _validate_and_fix(website_result, dataset_names)
+    if not matched_infos:
+        msg = f"No dataset names matched for {url!r}. Expected: {dataset_names}."
+        logger.error(msg)
+        raise ValueError(msg)
+    if len(matched_infos) < len(dataset_names):
+        unmatched = [n for i, n in enumerate(dataset_names) if i not in matched_indices]
+        logger.warning("Partial match (%d/%d) for %r — no info for: %s", len(matched_info), len(dataset_names), url, unmatched)
+    website_result.datasets_info = matched_infos
+    return website_result, matched_indices
