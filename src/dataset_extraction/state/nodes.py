@@ -4,6 +4,8 @@ from pydantic import model_validator
 
 from dataset_extraction.dataset.datasets import Dataset
 from dataset_extraction.fairground.metadata.metadata import DatasetMetadata
+from dataset_extraction.fairground.webpage.webpage import DatasetWebsiteInfo
+
 
 _DATASET_NS = uuid.UUID("b4e9a3c1-5d7f-4e2b-8a6c-3f1d9e0b2a4c")
 
@@ -31,3 +33,7 @@ class MetadataNode(DatasetMetadata):
             key = f"{self.paper_title or ''}::{self.official_dataset_name}"
             self.dataset_id = str(uuid.uuid5(_DATASET_NS, key))
         return self
+
+class DatasetWebsiteNode(DatasetWebsiteInfo):
+    paper_title: str | None = None
+    dataset_id: str = ""

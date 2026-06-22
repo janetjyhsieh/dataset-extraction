@@ -4,6 +4,7 @@ import re
 from enum import Enum
 
 from pydantic import BaseModel
+from dataset_extraction.fairground.webpage.webpage import WebsiteStatus
 
 
 def canonicalize_title(title: str) -> str:
@@ -73,4 +74,10 @@ class DatasetPaperNode(BaseModel):
     datasets: list[str] = []  # dataset_id values
     source_papers_titles: list[str] = []
     source_processed: bool = False
+    project_page: str | None = None
     link_processed: bool = False
+
+class ProjectPageNode(BaseModel):
+    paper_title: str
+    project_page: str
+    website_status: WebsiteStatus

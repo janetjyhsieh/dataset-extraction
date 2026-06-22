@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
 from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResult
-from dataset_extraction.state.nodes import DatasetNode, MetadataNode
-from dataset_extraction.state.paper import DatasetPaperNode, PaperInfo, PdfInfo
+from dataset_extraction.state.nodes import DatasetNode, MetadataNode, DatasetWebsiteNode
+from dataset_extraction.state.paper import DatasetPaperNode, PaperInfo, PdfInfo, ProjectPageNode
 
 _T = TypeVar("_T", bound=BaseModel)
 
@@ -119,3 +119,11 @@ class WebpageNodes(_NodeStore[WebsiteExtractionResult]):
 
     def __init__(self, db_path: str | Path) -> None:
         super().__init__(db_path, WebsiteExtractionResult, "url")
+
+class ProjectPageNodes(_NodeStore[ProjectPageNode]):
+    def __init__(self, db_path: str | Path) -> None:
+        super().__init__(db_path, ProjectPageNode, "paper_title")
+
+class DatasetWebsiteNodes(_NodeStore[DatasetWebsiteNode]):
+    def __init__(self, db_path: str | Path) -> None:
+        super().__init__(db_path, DatasetWebsiteNodes, "dataset_id")

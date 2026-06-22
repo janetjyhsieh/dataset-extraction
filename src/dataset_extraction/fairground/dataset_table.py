@@ -29,7 +29,6 @@ _COLUMNS = [
     "dataset_id",
     "paper_title",
     "official_dataset_name",
-    "dataset_page",
     "descriptions",
     "years_data",
     "data_license",

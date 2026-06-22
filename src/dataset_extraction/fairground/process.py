@@ -19,23 +19,32 @@ from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.fairground.metadata.extractor import extract_metadata
 from dataset_extraction.fairground.metadata.metadata import MetadataExtractionResult
+from dataset_extraction.fairground.webpage.extractor import extract_webpage
+from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResult
+
 from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
 from dataset_extraction.usage.nodes import UsageNodes
 from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes, DatasetPaperNodes
-from dataset_extraction.state.nodes import MetadataNode
-from dataset_extraction.state.paper import canonicalize_title, DatasetPaperNode
+from dataset_extraction.state.graph import DatasetWebsiteNodes, ProjectPageNodes
+from dataset_extraction.state.nodes import MetadataNode, DatasetWebsiteNode
+from dataset_extraction.state.paper import canonicalize_title, DatasetPaperNode, ProjectPageNode
 from dataset_extraction.state.queue import DatasetJob, Queue
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
 def save_dataset_paper(
+    result: MetadataExtractionResult,
     canonical_title: str,
     dataset_ids: List[str],
     dataset_paper_db: DatasetPaperNodes
 ) -> DatasetPaperNode:
-    dp = DatasetPaperNode(title=canonical_title, datasets=dataset_ids)
+    dp = DatasetPaperNode(
+        title=canonical_title, 
+        datasets=dataset_ids,
+        project_page=result.project_page
+    )
     dataset_paper_db.insert(dp)
     return dp
 
@@ -53,12 +62,41 @@ def save_metadata(
         metadata_db.upsert(metadata)
     return dataset_ids
 
+def save_dataset_website(
+    result: WebsiteExtractionResult,
+    canonical_title: str,
+    dataset_ids: list[str],
+    dataset_website_db: DatasetWebsiteNodes
+):
+    for i, dataset_info in enumerate(result.datasets_info):
+        data = dataset_info.model_dump()
+        dw = DatasetWebsiteNode(
+            paper_title=canonical_title,
+            dataset_id=dataset_ids[i],
+            **data
+        )
+        dataset_website_db.insert(dw)
+
+def save_project_website(
+    canonical_title: str,
+    result: WebsiteExtractionResult,
+    project_page_db: ProjectPageNodes
+):
+    pw = ProjectPageNode(
+        paper_title = canonical_title,
+        project_page = result.url,
+        website_status = result.website_status
+    )
+    project_page_db.insert(pw)
+
 
 def extract_and_save_metadata(
     queue: Queue[DatasetJob],
     client,
     metadata_db: MetadataNodes,
     dataset_paper_db: DatasetPaperNodes,
+    dataset_website_db: DatasetWebsiteNodes,
+    project_page_db: ProjectPageNodes
 ) -> None:
     while len(queue) > 0:
         job = queue.peek()
@@ -67,15 +105,33 @@ def extract_and_save_metadata(
             result = extract_metadata(job.pdf_path, client)
         except Exception:
             logger.exception("Metadata extraction failed for %s", job.title)
-            queue.dequeue()
+            queue.dequeue() #TODO: re-enqueue?
             continue
         canonical_title = job.title
         dataset_ids = save_metadata(result, canonical_title, metadata_db)
-        save_dataset_paper(canonical_title, dataset_ids, dataset_paper_db)
+        dataset_paper = save_dataset_paper(
+            result, canonical_title, dataset_ids, dataset_paper_db
+        )
         queue.dequeue()
 
-        # TODO: Process link
         logger.info("Saved %d dataset(s) from %s", len(result.datasets), canonical_title)
+
+        if dataset_paper.project_page:
+            #TODO: this can be a function of the database. This is also used in mapper
+            dataset_names = [dataset_metadata.official_dataset_name for dataset_metadata in result.datasets]
+            try:
+                result = extract_webpage(dataset_paper.project_page, canonical_title, 
+                dataset_names, model=client.model)
+            except Exception:
+                logger.exception("Website extraction failed for %s", job.title)
+                continue
+            dataset_ids = save_dataset_website(
+                result, canonical_title, dataset_ids, dataset_website_db
+            )
+            save_project_website(canonical_title, result, project_page_db)
+            dataset_paper.link_processed=True
+            dataset_paper_db.update(dataset_paper)
+            
 
 
 def main() -> None:
@@ -121,7 +177,9 @@ def main() -> None:
         enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
     dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
     metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
-    extract_and_save_metadata(queue, client, metadata_db, dataset_paper_db)
+    dataset_website_db = DatasetWebsiteNodes(databases_dir / "dataset_website_nodes.json")
+    project_page_db = ProjectPageNodes(databases_dir / "project_page_nodes.json")
+    extract_and_save_metadata(queue, client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
 
     logger.info("Done. Results in %s", working_dir)
 
