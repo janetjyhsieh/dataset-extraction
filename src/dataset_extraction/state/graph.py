@@ -126,4 +126,4 @@ class ProjectPageNodes(_NodeStore[ProjectPageNode]):
 
 class DatasetWebsiteNodes(_NodeStore[DatasetWebsiteNode]):
     def __init__(self, db_path: str | Path) -> None:
-        super().__init__(db_path, DatasetWebsiteNodes, "dataset_id")
+        super().__init__(db_path, DatasetWebsiteNode, "dataset_id")
