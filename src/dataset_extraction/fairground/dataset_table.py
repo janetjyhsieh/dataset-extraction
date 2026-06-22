@@ -21,11 +21,11 @@ from pathlib import Path
 import pandas as pd
 
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import MetadataNodes
+from dataset_extraction.state.graph import DatasetPaperNodes, DatasetWebsiteNodes, MetadataNodes, PaperInfoNodes, ProjectPageNodes
 
 logger = logging.getLogger("dataset_extraction.fairground.dataset_table")
 
-_COLUMNS = [
+_METADATA_COLUMNS = [
     "dataset_id",
     "paper_title",
     "official_dataset_name",
@@ -39,6 +39,66 @@ _COLUMNS = [
     "protected_attributes",
     "other_annotations",
 ]
+
+_WEBSITE_COLUMNS = [
+    "availability",
+    "dataset_download_instruction",
+    "website_data_license",
+    "website_usage_agreement",
+]
+
+_PAPER_COLUMNS = [
+    "project_page",
+    "website_accessible",
+    "website_error",
+    "venue",
+    "year",
+]
+
+_COMPUTED_COLUMNS = [
+    "num_usages",
+]
+
+_COLUMNS = _METADATA_COLUMNS + _WEBSITE_COLUMNS + _PAPER_COLUMNS + _COMPUTED_COLUMNS
+
+
+def _website_row(dw) -> dict:
+    if dw is None:
+        return {col: None for col in _WEBSITE_COLUMNS}
+    return {
+        "availability": dw.dataset_download.availability,
+        "dataset_download_instruction": dw.dataset_download.dataset_download_instruction,
+        "website_data_license": dw.dataset_license.data_license,
+        "website_usage_agreement": dw.usage_agreement.usage_agreement,
+    }
+
+
+def _paper_row(dp, pp, pi) -> dict:
+    if dp is None:
+        return {col: None for col in _PAPER_COLUMNS}
+    status = pp.website_status if pp is not None else None
+    return {
+        "project_page": dp.project_page,
+        "website_accessible": status.accessible if status else None,
+        "website_error": status.error if status else None,
+        "venue": pi.venue if pi else None,
+        "year": pi.year if pi else None,
+    }
+
+
+def _build_computed_lookups(usage_map: dict) -> dict[str, dict]:
+    usage_counts: dict[str, int] = {}
+    for entry in usage_map.values():
+        if entry is not None and entry.get("dataset_id"):
+            did = entry["dataset_id"]
+            usage_counts[did] = usage_counts.get(did, 0) + 1
+    return {"usage_counts": usage_counts}
+
+
+def _computed_row(dataset_id: str, lookups: dict) -> dict:
+    return {
+        "num_usages": lookups["usage_counts"].get(dataset_id, 0),
+    }
 
 
 def run(working_dir: Path) -> pd.DataFrame:
@@ -55,8 +115,13 @@ def run(working_dir: Path) -> pd.DataFrame:
         if entry is not None and entry.get("dataset_id")
     }
     logger.info("Found %d unique dataset_ids in usage_map", len(dataset_ids))
+    computed_lookups = _build_computed_lookups(usage_map)
 
     metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
+    dataset_website_db = DatasetWebsiteNodes(databases_dir / "dataset_website_nodes.json")
+    dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
+    project_page_db = ProjectPageNodes(databases_dir / "project_page_nodes.json")
+    paper_info_db = PaperInfoNodes(working_dir / "fg" / "state" / "paper_info_nodes.json")
 
     rows = []
     for dataset_id in sorted(dataset_ids):
@@ -64,7 +129,15 @@ def run(working_dir: Path) -> pd.DataFrame:
         if node is None:
             logger.warning("MetadataNode %r not found — skipping", dataset_id)
             continue
-        rows.append({col: getattr(node, col, None) for col in _COLUMNS})
+        dw = dataset_website_db.get(dataset_id)
+        dp = dataset_paper_db.get(node.paper_title) if node.paper_title else None
+        pp = project_page_db.get(node.paper_title) if node.paper_title else None
+        pi = paper_info_db.get(node.paper_title) if node.paper_title else None
+        row = {col: getattr(node, col, None) for col in _METADATA_COLUMNS}
+        row.update(_website_row(dw))
+        row.update(_paper_row(dp, pp, pi))
+        row.update(_computed_row(dataset_id, computed_lookups))
+        rows.append(row)
 
     df = pd.DataFrame(rows, columns=_COLUMNS)
 
