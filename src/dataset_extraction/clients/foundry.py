@@ -104,6 +104,8 @@ class FoundryClient:
         for attempt in range(max_retries):
             try:
                 return self._client.responses.create(**kwargs)
+            except openai.BadRequestError:
+                raise
             except openai.RateLimitError:
                 if attempt == max_retries - 1:
                     raise
