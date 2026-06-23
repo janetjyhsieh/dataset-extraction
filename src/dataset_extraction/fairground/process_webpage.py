@@ -17,6 +17,7 @@ from pathlib import Path
 from dataset_extraction.fairground.webpage.extractor import extract_webpage
 from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import DatasetPaperNodes, MetadataNodes, WebpageNodes
+from dataset_extraction.fairground.state_loader import load_state
 
 logger = logging.getLogger("dataset_extraction.fairground.process_webpage")
 
@@ -76,16 +77,12 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
-    databases_dir = working_dir / "fg" / "databases"
-    databases_dir.mkdir(parents=True, exist_ok=True)
-
     setup_logging(working_dir / "fg" / "logs")
 
-    dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
-    metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
+    databases_dir = working_dir / "fg" / "databases"
+    state = load_state(working_dir)
     webpage_db = WebpageNodes(databases_dir / "webpage_nodes.json")
-
-    process_all(dataset_paper_db, metadata_db, webpage_db)
+    process_all(state.dataset_paper_db, state.metadata_db, webpage_db)
     logger.info("Done.")
 
 

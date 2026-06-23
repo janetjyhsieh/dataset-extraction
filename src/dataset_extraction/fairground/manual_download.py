@@ -18,9 +18,9 @@ from pathlib import Path
 import requests
 
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import PaperInfoNodes
 from dataset_extraction.state.paper import PdfDownloadSource, PdfInfo
-from dataset_extraction.state.queue import DatasetJob, Queue
+from dataset_extraction.state.queue import DatasetJob
+from dataset_extraction.fairground.state_loader import load_state
 
 logger = logging.getLogger("dataset_extraction.fairground.manual_download")
 
@@ -38,12 +38,12 @@ def _download_pdf(url: str, dest: Path) -> None:
 
 
 def run(working_dir: Path) -> None:
-    state_dir = working_dir / "fg" / "state"
     manual_dir = working_dir / "manual"
     manual_dir.mkdir(parents=True, exist_ok=True)
 
-    paper_info_db = PaperInfoNodes(state_dir / "paper_info_nodes.json")
-    queue: Queue[DatasetJob] = Queue(DatasetJob, state_dir / "dataset_queue.jsonl")
+    state = load_state(working_dir)
+    paper_info_db = state.paper_info_db
+    queue = state.queue
 
     already_queued_titles = {job.title for job in queue.all()}
 

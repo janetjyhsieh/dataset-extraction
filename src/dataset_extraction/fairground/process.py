@@ -23,13 +23,13 @@ from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResul
 
 from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
-from dataset_extraction.usage.nodes import UsageNodes
 from dataset_extraction.log import setup_logging
 from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes, DatasetPaperNodes
 from dataset_extraction.state.graph import DatasetWebsiteNodes, ProjectPageNodes
 from dataset_extraction.state.nodes import MetadataNode, DatasetWebsiteNode
 from dataset_extraction.state.paper import canonicalize_title, DatasetPaperNode, ProjectPageNode
 from dataset_extraction.state.queue import DatasetJob, Queue
+from dataset_extraction.fairground.state_loader import load_state
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
@@ -253,10 +253,6 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
-    (working_dir / "fg" / "state").mkdir(parents=True, exist_ok=True)
-    databases_dir = working_dir / "fg" / "databases"
-    databases_dir.mkdir(parents=True, exist_ok=True)
-
     setup_logging(working_dir / "fg" / "logs")
 
     kwargs = {} if args.model is None else {"model": args.model}
@@ -264,32 +260,25 @@ def main() -> None:
         kwargs["reasoning_effort"] = args.reasoning_effort
     client = FoundryClient(**kwargs)
 
-    usages_path = working_dir / "state" / "usages.json"
-    usage_nodes = UsageNodes(usages_path)
-    if not usages_path.exists():
-        logger.info("No usages.json found — running usage extraction") # TODO: should run this regardless, in case some havent been extracted
-        extract_and_save_usages(working_dir, client, usage_nodes)
-    else:
-        logger.info("Skipping usage extraction (usages.json already exists)")
+    state = load_state(working_dir)
 
-    paper_info_db = PaperInfoNodes(working_dir / "fg" / "state" / "paper_info_nodes.json")
-    queue: Queue[DatasetJob] = Queue(DatasetJob, working_dir / "fg" / "state" / "dataset_queue.jsonl")
+    if len(state.usage_nodes) == 0:
+        logger.info("No usages found — running usage extraction") # TODO: should run this regardless, in case some havent been extracted
+        extract_and_save_usages(working_dir, client, state.usage_nodes)
+    else:
+        logger.info("Skipping usage extraction (%d usages already stored)", len(state.usage_nodes))
 
     if args.repopulate_queue: # TODO: think about this
-        for paper in paper_info_db.all():
+        for paper in state.paper_info_db.all():
             if paper.pdf_info.download_success and paper.pdf_info.pdf_file_path:
-                queue.enqueue(DatasetJob(title=paper.canonical_title, pdf_path=paper.pdf_info.pdf_file_path))
-        logger.info("Repopulated queue with %d paper(s) from paper_info", len(queue))
+                state.queue.enqueue(DatasetJob(title=paper.canonical_title, pdf_path=paper.pdf_info.pdf_file_path))
+        logger.info("Repopulated queue with %d paper(s) from paper_info", len(state.queue))
     else:
-        enqueue_used_datasets(usage_nodes.all(), paper_info_db, queue, working_dir)
-    dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
-    metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
-    dataset_website_db = DatasetWebsiteNodes(databases_dir / "dataset_website_nodes.json")
-    project_page_db = ProjectPageNodes(databases_dir / "project_page_nodes.json")
-    
-    extract_and_save(queue, client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
-    process_unprocessed_links(client, metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
-    verify_databases(metadata_db, dataset_paper_db, dataset_website_db, project_page_db)
+        enqueue_used_datasets(state.usage_nodes.all(), state.paper_info_db, state.queue, working_dir)
+
+    extract_and_save(state.queue, client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
+    process_unprocessed_links(client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
+    verify_databases(state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
 
     logger.info("Done. Results in %s", working_dir)
 

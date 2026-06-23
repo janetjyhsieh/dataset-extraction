@@ -22,9 +22,9 @@ from pathlib import Path
 from dataset_extraction.clients.foundry import DEFAULT_MODEL
 from dataset_extraction.log import setup_logging
 from dataset_extraction.mapper.map import map_datasets
-from dataset_extraction.state.graph import MetadataNodes, DatasetPaperNodes
 from dataset_extraction.state.paper import canonicalize_title
-from dataset_extraction.usage.nodes import UsageNode, UsageNodes
+from dataset_extraction.usage.nodes import UsageNode
+from dataset_extraction.fairground.state_loader import load_state
 
 logger = logging.getLogger("dataset_extraction.fairground.map_usages")
 
@@ -40,12 +40,12 @@ def _save_output(path: Path, data: dict) -> None:
 
 
 def run(working_dir: Path, model: str = DEFAULT_MODEL) -> None:
-    databases_dir = working_dir / "fg" / "databases"
-    databases_dir.mkdir(parents=True, exist_ok=True)
+    state = load_state(working_dir)
+    usage_nodes = state.usage_nodes
+    dataset_metadata_db = state.metadata_db
+    dataset_paper_db = state.dataset_paper_db
 
-    usage_nodes = UsageNodes(working_dir / "state" / "usages.json")
-    dataset_metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
-    dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
+    databases_dir = working_dir / "fg" / "databases"
 
     output_path = databases_dir / "usage_map.json"
     output = _load_output(output_path)

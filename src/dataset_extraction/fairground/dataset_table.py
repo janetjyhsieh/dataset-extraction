@@ -21,7 +21,7 @@ from pathlib import Path
 import pandas as pd
 
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import DatasetPaperNodes, DatasetWebsiteNodes, MetadataNodes, PaperInfoNodes, ProjectPageNodes
+from dataset_extraction.fairground.state_loader import load_state
 
 logger = logging.getLogger("dataset_extraction.fairground.dataset_table")
 
@@ -117,11 +117,12 @@ def run(working_dir: Path) -> pd.DataFrame:
     logger.info("Found %d unique dataset_ids in usage_map", len(dataset_ids))
     computed_lookups = _build_computed_lookups(usage_map)
 
-    metadata_db = MetadataNodes(databases_dir / "metadata_nodes.json")
-    dataset_website_db = DatasetWebsiteNodes(databases_dir / "dataset_website_nodes.json")
-    dataset_paper_db = DatasetPaperNodes(databases_dir / "dataset_paper_nodes.json")
-    project_page_db = ProjectPageNodes(databases_dir / "project_page_nodes.json")
-    paper_info_db = PaperInfoNodes(working_dir / "fg" / "state" / "paper_info_nodes.json")
+    state = load_state(working_dir)
+    metadata_db = state.metadata_db
+    dataset_website_db = state.dataset_website_db
+    dataset_paper_db = state.dataset_paper_db
+    project_page_db = state.project_page_db
+    paper_info_db = state.paper_info_db
 
     rows = []
     for dataset_id in sorted(dataset_ids):
