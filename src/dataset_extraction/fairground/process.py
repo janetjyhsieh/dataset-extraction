@@ -140,7 +140,7 @@ def extract_and_save_website_metadata(
         logger.info("Saved website metadata for %s", title)
 
 
-def extract_and_save(
+def extract_and_save_metadata(
     queue: Queue[DatasetJob],
     client,
     metadata_db: MetadataNodes,
@@ -250,6 +250,7 @@ def main() -> None:
     parser.add_argument("--model", default=None, help="Model ID (default: provider's default)")
     parser.add_argument("--reasoning-effort", choices=["low", "medium", "high"], default=None, help="Reasoning effort (foundry only)")
     parser.add_argument("--repopulate-queue", action="store_true", help="Re-enqueue all paper_info entries and run metadata extraction")
+    parser.add_argument("--manual", action="store_true", help="Manual link download")
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
@@ -262,21 +263,12 @@ def main() -> None:
 
     state = load_state(working_dir)
 
-    if len(state.usage_nodes) == 0:
-        logger.info("No usages found — running usage extraction") # TODO: should run this regardless, in case some havent been extracted
-        extract_and_save_usages(working_dir, client, state.usage_nodes)
-    else:
-        logger.info("Skipping usage extraction (%d usages already stored)", len(state.usage_nodes))
+    # Step 1 extract usages and enqueue
+    extract_and_save_usages(working_dir, client, state.usage_nodes)
+    enqueue_used_datasets(state.usage_nodes.all(), state.paper_info_db, state.queue, working_dir)
 
-    if args.repopulate_queue: # TODO: think about this
-        for paper in state.paper_info_db.all():
-            if paper.pdf_info.download_success and paper.pdf_info.pdf_file_path:
-                state.queue.enqueue(DatasetJob(title=paper.canonical_title, pdf_path=paper.pdf_info.pdf_file_path))
-        logger.info("Repopulated queue with %d paper(s) from paper_info", len(state.queue))
-    else:
-        enqueue_used_datasets(state.usage_nodes.all(), state.paper_info_db, state.queue, working_dir)
-
-    extract_and_save(state.queue, client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
+    # Stap 2 extract metadata
+    extract_and_save_metadata(state.queue, client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
     process_unprocessed_links(client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
     verify_databases(state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
 
