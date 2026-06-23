@@ -4,11 +4,12 @@ import logging
 from pathlib import Path
 from typing import Union
 
+import json
+
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
 from dataset_extraction.usage.nodes import UsageNode, UsageNodes
-from dataset_extraction.utils import load_title_map
 
 from .usages import UsageExtractionResult
 
@@ -32,20 +33,30 @@ def extract_and_save_usages(
     client: Client,
     usage_nodes: UsageNodes,
 ) -> list[UsageNode]:
-    """Extract usages from all PDFs in working_dir/pdfs/ and save to the store.
+    """Extract usages from PDFs listed in working_dir/index.jsonl and save to the store.
 
     Skips papers that have already been processed. Returns all stored UsageNodes.
     """
-    title_map = load_title_map(working_dir)
-    pdfs = sorted((working_dir / "pdfs").glob("*.pdf"))
-    logger.info("Found %d PDF(s) under %s/pdfs", len(pdfs), working_dir)
+    index_path = working_dir / "index.jsonl"
+    if not index_path.exists():
+        logger.warning("No index.jsonl found at %s — nothing to extract", index_path)
+        return usage_nodes.all()
 
-    for pdf in pdfs:
-        paper_id = pdf.stem
-        paper_title = title_map.get(paper_id, paper_id)
+    with open(index_path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    logger.info("Found %d entries in index.jsonl", len(entries))
+
+    for entry in entries:
+        paper_id = entry["id"]
+        paper_title = entry["title"]
+        pdf = working_dir / "pdfs" / f"{paper_id}.pdf"
+
+        if not pdf.exists():
+            logger.debug("PDF not found for %s (%s) — skipping", paper_id, paper_title)
+            continue
 
         if usage_nodes.is_processed(paper_title):
-            logger.debug("Skipping %s (already processed)", pdf.name)
+            logger.debug("Skipping %s (already processed)", paper_title)
             continue
 
         logger.info("Extracting usages from %s", pdf.name)
