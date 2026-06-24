@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 _SEARCH_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 _FIELDS = "title,openAccessPdf,externalIds,year,authors,venue,paperId"
-_RETRYABLE = {429, 503}
+_RETRYABLE = {429, 500, 503}
 
 
 @dataclass
@@ -35,19 +35,23 @@ class SemanticScholarClient:
 
     def _get(self, params: dict) -> requests.Response:
         delay = 5
-        resp = None
         for attempt in range(self._max_retries):
-            resp = requests.get(_SEARCH_URL, params=params, headers=self._headers(), timeout=15)
-            if resp.status_code not in _RETRYABLE:
-                return resp
-            retry_after = int(resp.headers.get("Retry-After", delay))
-            logger.warning(
-                "%d from S2 — retrying in %ds (attempt %d/%d)",
-                resp.status_code, retry_after, attempt + 1, self._max_retries,
-            )
+            try:
+                resp = requests.get(_SEARCH_URL, params=params, headers=self._headers(), timeout=15)
+            except requests.Timeout:
+                retry_after = delay
+                logger.warning("S2 timeout — retrying in %ds (attempt %d/%d)", retry_after, attempt + 1, self._max_retries)
+            else:
+                if resp.status_code not in _RETRYABLE:
+                    return resp
+                retry_after = int(resp.headers.get("Retry-After", delay))
+                logger.warning(
+                    "%d from S2 — retrying in %ds (attempt %d/%d)",
+                    resp.status_code, retry_after, attempt + 1, self._max_retries,
+                )
             time.sleep(retry_after)
             delay *= 2
-        return resp
+        raise requests.Timeout("S2 timed out after all retries")
 
     def get_paper(self, title: str) -> S2Paper | None:
         """Search S2 by title and return the best matching paper, or None."""
