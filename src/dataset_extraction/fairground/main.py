@@ -45,7 +45,7 @@ def save_dataset_paper(
         datasets=dataset_ids,
         project_page=result.project_page
     )
-    dataset_paper_db.insert(dp)
+    dataset_paper_db.upsert(dp)
     return dp
 
 def save_metadata(
@@ -75,7 +75,7 @@ def save_dataset_website(
             dataset_id=dataset_ids[i],
             **data
         )
-        dataset_website_db.insert(dw)
+        dataset_website_db.upsert(dw)
 
 def save_project_website(
     canonical_title: str,
@@ -87,7 +87,7 @@ def save_project_website(
         project_page = result.url,
         website_status = result.website_status
     )
-    project_page_db.insert(pw)
+    project_page_db.upsert(pw)
 
 def extract_and_save_pdf_metadata(
     job: DatasetJob,
@@ -117,11 +117,6 @@ def extract_and_save_website_metadata(
     client
 ) -> None:
     if dataset_paper.project_page:
-        #TODO: this can be a function of the database. This is also used in mapper
-        # datasets = [
-        #     (did, metadata_db.get(did).official_dataset_name)
-        #     for did in dataset_paper.datasets
-        # ]
         dataset_names = [
             metadata_db.get(did).official_dataset_name
             for did in dataset_paper.datasets
