@@ -226,15 +226,30 @@ def search_openreview(title: str) -> str | None:
         logger.debug("OpenReview error for %r", title, exc_info=True)
     return None
 
+def _venue_year_from_dblp(dblp_key: str) -> int | None:
+    """Extract the conference year from a DBLP key.
 
-def pdf_from_venue(external_ids: dict, year: int, title: str) -> str | None:
+    DBLP keys encode the year as a 2-digit suffix on the paper ID, e.g.
+    'conf/cvpr/HeZRS16' → 2016. More reliable than S2's year field, which
+    reflects the arXiv submission date rather than the conference year.
+    """
+    last = dblp_key.rstrip("/").rsplit("/", 1)[-1]
+    m = re.search(r"(\d{2})$", last)
+    if not m:
+        return None
+    yy = int(m.group(1))
+    current_yy = datetime.date.today().year % 100
+    return 2000 + yy if yy <= current_yy else 1900 + yy
+
+def pdf_from_venue(external_ids: dict, title: str) -> str | None:
     """Route to a venue-specific open-access source based on the DBLP key."""
     dblp_key = external_ids.get("DBLP")
     if not dblp_key:
         return None
 
+    year = _venue_year_from_dblp(dblp_key)
     venue = dblp_key.split("/")[1] if "/" in dblp_key else None
-    if not venue:
+    if not year or not venue:
         return None
 
     if venue in _CVF_VENUES:

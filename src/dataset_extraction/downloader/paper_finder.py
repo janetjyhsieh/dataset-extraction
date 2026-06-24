@@ -12,7 +12,7 @@ from dataset_extraction.downloader.arxiv import ArxivClient
 from dataset_extraction.downloader.semantic_scholar import SemanticScholarClient
 from dataset_extraction.downloader.utils import titles_match
 from dataset_extraction.downloader.venues import pdf_from_venue, venue_source
-from dataset_extraction.state.paper import PaperInfo, PdfDownloadSource, SearchEngineId, SearchEngineSource
+from dataset_extraction.state.paper import PaperInfo, PdfDownloadSource
 
 logger = logging.getLogger(__name__)
 
@@ -20,27 +20,34 @@ _s2_client = SemanticScholarClient()
 _arxiv_client = ArxivClient()
 
 
-def _pdf_from_external_ids(external_ids: dict) -> str | None:
+def _urls_from_external_ids(external_ids: dict) -> str | None:
     """Return a direct PDF URL from known external IDs (ArXiv, ACL, PubMedCentral)."""
+    external_urls = []
     arxiv_id = external_ids.get("ArXiv")
     if arxiv_id:
         url = f"https://arxiv.org/pdf/{arxiv_id}"
         logger.debug("Found ArXiv ID: %s → %s", arxiv_id, url)
-        return url
+        external_urls.append(
+            {"source": PdfDownloadSource.s2_arxiv, "url": url}
+        )
 
     acl_id = external_ids.get("ACL")
     if acl_id:
         url = f"https://aclanthology.org/{acl_id}.pdf"
         logger.debug("Found ACL ID: %s → %s", acl_id, url)
-        return url
+        external_urls.append(
+            {"source": PdfDownloadSource.s2_acl, "url": url}
+        )
 
     pmc_id = external_ids.get("PubMedCentral")
     if pmc_id:
         url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{pmc_id}/pdf"
         logger.debug("Found PubMedCentral ID: %s → %s", pmc_id, url)
-        return url
+        external_urls.append(
+            {"source": PdfDownloadSource.pubmedcentral, "url": url}
+        )
 
-    return None
+    return external_urls
 
 
 def _search_arxiv(title: str) -> tuple[str, str] | None:
@@ -58,20 +65,21 @@ def _title_to_id(title: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")[:80]
 
 
-def _venue_year_from_dblp(dblp_key: str) -> int | None:
-    """Extract the conference year from a DBLP key.
-
-    DBLP keys encode the year as a 2-digit suffix on the paper ID, e.g.
-    'conf/cvpr/HeZRS16' → 2016. More reliable than S2's year field, which
-    reflects the arXiv submission date rather than the conference year.
-    """
-    last = dblp_key.rstrip("/").rsplit("/", 1)[-1]
-    m = re.search(r"(\d{2})$", last)
-    if not m:
-        return None
-    yy = int(m.group(1))
-    current_yy = datetime.date.today().year % 100
-    return 2000 + yy if yy <= current_yy else 1900 + yy
+def _download_pdf(url: str, dest: Path, node: PaperInfo, source: PdfDownloadSource) -> bool:
+    node.pdf_info.link_found = True
+    try:
+        resp = requests.get(url, timeout=60)
+        resp.raise_for_status()
+        dest.write_bytes(resp.content)
+    except Exception as e:
+        logger.debug("Download failed from %s: %s", url, e)
+        node.pdf_info.errors.append(f"Download failed: {url}")
+        return False
+    node.pdf_info.url = url
+    node.pdf_info.pdf_download_source = source
+    node.pdf_info.pdf_file_path = str(dest)
+    node.pdf_info.download_success = True
+    return True
 
 
 def find_and_download_pdf(
@@ -86,12 +94,13 @@ def find_and_download_pdf(
          sources: CVF, ECVA, NeurIPS, PMLR, ACL Anthology, AAAI, OpenReview).
       3. arXiv title search as final fallback.
 
-    Populates node.authors, node.year, node.venue, and node.pdf_info in-place.
-    Errors are appended to node.pdf_info.errors. Skips the download if the
-    destination file already exists.
+    Each URL is downloaded immediately after being found. If the download fails,
+    the next source is tried. Populates node.authors, node.year, node.venue,
+    and node.pdf_info in-place. Errors are appended to node.pdf_info.errors.
+    Skips the download if the destination file already exists.
 
     Args:
-        node: The DatasetPaperNode to populate. Must have canonical_title set.
+        node: The PaperInfo to populate. Must have canonical_title set.
         download_dir: Directory to save the downloaded PDF.
 
     Returns:
@@ -100,10 +109,7 @@ def find_and_download_pdf(
     download_dir = Path(download_dir)
     download_dir.mkdir(parents=True, exist_ok=True)
     title = node.canonical_title
-
-    pdf_url: str | None = None
-    pdf_source: PdfDownloadSource | None = None
-    search_engine_id: SearchEngineId | None = None
+    dest = download_dir / f"{_title_to_id(title)}.pdf"
 
     # Stage 1 & 2: Semantic Scholar
     s2_paper = _s2_client.get_paper(title)
@@ -111,68 +117,30 @@ def find_and_download_pdf(
         node.year = s2_paper.year
         node.venue = s2_paper.venue
         node.authors = s2_paper.authors
-        if s2_paper.search_engine_id:
-            search_engine_id = SearchEngineId(source=SearchEngineSource.semantic_scholar, id=s2_paper.search_engine_id)
+        node.ss_id = s2_paper.paper_id
 
         if s2_paper.open_access_pdf:
-            pdf_url = s2_paper.open_access_pdf
-            pdf_source = PdfDownloadSource.s2_open_access_pdf
-            logger.debug("Found via S2 openAccessPdf")
+            if _download_pdf(s2_paper.open_access_pdf, dest, node, PdfDownloadSource.s2_open_access_pdf):
+                return dest
 
-        if pdf_url is None:
-            result = _pdf_from_external_ids(s2_paper.external_ids)
-            if result:
-                pdf_url = result
-                ids = s2_paper.external_ids
-                if ids.get("ArXiv"):
-                    pdf_source = PdfDownloadSource.s2_arxiv
-                elif ids.get("ACL"):
-                    pdf_source = PdfDownloadSource.s2_acl
-                elif ids.get("PubMedCentral"):
-                    pdf_source = PdfDownloadSource.s2_pubmedcentral
+        ext_urls = _urls_from_external_ids(s2_paper.external_ids) # this should live inside utils
+        for ext_url in ext_urls:
+            if _download_pdf(ext_url["url"], dest, node, ext_url["source"]):
+                return dest
 
-            venue_year = _venue_year_from_dblp(s2_paper.external_ids.get("DBLP", "")) or s2_paper.year
-            if pdf_url is None and venue_year:
-                result = pdf_from_venue(s2_paper.external_ids, venue_year, title)
-                if result:
-                    pdf_url = result
-                    pdf_source = venue_source(s2_paper.external_ids)
+        venue_url = pdf_from_venue(s2_paper.external_ids, venue_year, title)
+        if venue_url and _download_pdf(venue_url, dest, node, venue_source(s2_paper.external_ids)):
+            return dest
 
     # Stage 3: arXiv fallback
-    if pdf_url is None:
-        logger.debug("Falling back to arXiv search for %r", title)
-        result = _search_arxiv(title)
-        if result:
-            pdf_url, arxiv_id = result
-            pdf_source = PdfDownloadSource.arxiv
-            if search_engine_id is None:
-                search_engine_id = SearchEngineId(source=SearchEngineSource.arxiv, id=arxiv_id)
+    logger.debug("Falling back to arXiv search for %r", title)
+    arxiv_result = _search_arxiv(title)
+    if arxiv_result:
+        arxiv_url, arxiv_id = arxiv_result
+        if _download_pdf(arxiv_url, dest, node, PdfDownloadSource.arxiv):
+            return dest
 
-    node.search_engine_id = search_engine_id
-    node.pdf_info.link_found = pdf_url is not None
-    node.pdf_info.url = pdf_url
-    node.pdf_info.pdf_download_source = pdf_source
-
-    if pdf_url is None:
+    if not node.pdf_info.link_found:
         node.pdf_info.errors.append("No open-access PDF found")
-        node.pdf_info.download_success = False
-        return None
-
-    # Download
-    dest = download_dir / f"{_title_to_id(title)}.pdf"
-    if dest.exists():
-        node.pdf_info.pdf_file_path = str(dest)
-        node.pdf_info.download_success = True
-        return dest
-
-    try:
-        resp = requests.get(pdf_url, timeout=60)
-        resp.raise_for_status()
-        dest.write_bytes(resp.content)
-        node.pdf_info.pdf_file_path = str(dest)
-        node.pdf_info.download_success = True
-        return dest
-    except Exception as e:
-        node.pdf_info.errors.append(f"Failed to download PDF from {pdf_url}: {e}")
-        node.pdf_info.download_success = False
-        return None
+    node.pdf_info.download_success = False
+    return None

@@ -32,16 +32,6 @@ class PdfDownloadSource(str, Enum):
     direct = "direct"
 
 
-class SearchEngineSource(str, Enum):
-    semantic_scholar = "semantic_scholar"
-    arxiv = "arxiv"
-
-
-class SearchEngineId(BaseModel):
-    source: SearchEngineSource
-    id: str
-
-
 class PdfInfo(BaseModel):
     link_found: bool #TODO: default False
     download_success: bool #TODO: default False
@@ -58,7 +48,7 @@ class PaperInfo(BaseModel):
     year: int | None = None
     venue: str | None = None
     pdf_info: PdfInfo
-    search_engine_id: SearchEngineId | None = None
+    ss_id: str | None = None
 
 
 class DatasetPaperNode(BaseModel):
