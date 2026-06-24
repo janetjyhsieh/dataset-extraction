@@ -13,6 +13,7 @@ import argparse
 import logging
 from pathlib import Path
 
+from dataset_extraction.error import LLMExtractionError
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
@@ -100,7 +101,7 @@ def extract_and_save_pdf_metadata(
         result = extract_metadata(job.pdf_path, client)
     except Exception:
         logger.exception("PDF metadata extraction failed for %s", job.title)
-        raise
+        raise LLMExtractionError("extract_metadata failed for %s", job.title)
     canonical_title = job.title
     dataset_ids = save_metadata(result, canonical_title, metadata_db)
     dataset_paper = save_dataset_paper(
@@ -127,7 +128,7 @@ def extract_and_save_website_metadata(
             dataset_names, model=client.model)
         except Exception:
             logger.exception("Website extraction failed for %s", title)
-            raise
+            raise LLMExtractionError("extract_webpage failed for %s", title)
         matched_dataset_ids = [dataset_paper.datasets[i] for i in matched_indices]
         dataset_ids = save_dataset_website(
             result, title, matched_dataset_ids, dataset_website_db
@@ -150,12 +151,10 @@ def extract_and_save_metadata(
             dataset_paper = extract_and_save_pdf_metadata(
                 job, metadata_db, dataset_paper_db, client
             )
-        except Exception:
+        except LLMExtractionError:
             queue.dequeue()
-            queue.enqueue(job)
             continue
-        else:
-            queue.dequeue()
+        queue.dequeue()
 
         # Step 2: extract website metadata
         try:
@@ -163,7 +162,8 @@ def extract_and_save_metadata(
                 dataset_paper, metadata_db, dataset_website_db, project_page_db,
                 client
             )
-        except Exception:
+        except LLMExtractionError:
+            dataset_paper.link_processed=True
             continue
         dataset_paper.link_processed=True
         dataset_paper_db.update(dataset_paper)
@@ -234,6 +234,7 @@ def process_unprocessed_links(
                     dataset_paper, metadata_db, dataset_website_db, project_page_db, client
                 )
             except Exception:
+                dataset_paper.link_processed = True
                 logger.exception("Website extraction failed for %s", dataset_paper.title)
                 continue
             dataset_paper.link_processed = True
