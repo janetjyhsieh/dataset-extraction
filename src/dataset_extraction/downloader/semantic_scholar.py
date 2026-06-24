@@ -35,11 +35,14 @@ class SemanticScholarClient:
 
     def _get(self, params: dict) -> requests.Response:
         delay = 5
+        request_timeout = 15
+        additional_timeout = 5
         for attempt in range(self._max_retries):
             try:
-                resp = requests.get(_SEARCH_URL, params=params, headers=self._headers(), timeout=15)
+                resp = requests.get(_SEARCH_URL, params=params, headers=self._headers(), timeout=request_timeout)
             except requests.Timeout:
                 retry_after = delay
+                request_timeout = request_timeout + additional_timeout
                 logger.warning("S2 timeout — retrying in %ds (attempt %d/%d)", retry_after, attempt + 1, self._max_retries)
             else:
                 if resp.status_code not in _RETRYABLE:

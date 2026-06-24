@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 _API_URL = "http://export.arxiv.org/api/query"
 _NS = {"atom": "http://www.w3.org/2005/Atom"}
 _MIN_INTERVAL = 3.0  # seconds required between requests per arxiv API guidelines
-_RETRYABLE = {429, 503}
+_RETRYABLE = {429, 500, 503}
 
 
 class ArxivClient:
@@ -27,20 +27,27 @@ class ArxivClient:
     def _get(self, params: dict) -> requests.Response:
         self._throttle()
         delay = 5
-        resp = None
+        request_timeout = 30
+        additional_timeout = 10
         for attempt in range(self._max_retries):
-            resp = requests.get(_API_URL, params=params, timeout=30)
-            if resp.status_code not in _RETRYABLE:
-                return resp
-            retry_after = int(resp.headers.get("Retry-After", delay))
-            logger.warning(
-                "%d from arXiv — retrying in %ds (attempt %d/%d)",
-                resp.status_code, retry_after, attempt + 1, self._max_retries,
-            )
+            try:
+                resp = requests.get(_API_URL, params=params, timeout=request_timeout)
+            except requests.Timeout:
+                retry_after = delay
+                request_timeout += additional_timeout
+                logger.warning("arXiv timeout — retrying in %ds (attempt %d/%d)", retry_after, attempt + 1, self._max_retries)
+            else:
+                if resp.status_code not in _RETRYABLE:
+                    return resp
+                retry_after = int(resp.headers.get("Retry-After", delay))
+                logger.warning(
+                    "%d from arXiv — retrying in %ds (attempt %d/%d)",
+                    resp.status_code, retry_after, attempt + 1, self._max_retries,
+                )
             time.sleep(retry_after)
             self._throttle()
             delay *= 2
-        return resp
+        raise requests.Timeout("arXiv timed out after all retries")
 
     def search_by_title(self, title: str, max_results: int = 3) -> list[dict]:
         """Query the arXiv title index. Returns a list of dicts with 'title' and 'pdf_url'."""
