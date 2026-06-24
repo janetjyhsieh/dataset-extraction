@@ -44,14 +44,6 @@ class FoundryClient:
             return {}
         return {"reasoning": {"effort": self.reasoning_effort}}
 
-    def send_pdf(self, pdf_path: str | Path, prompt: str) -> str:
-        response = self._client.responses.create(
-            model=self.model,
-            input=[{"role": "user", "content": self._pdf_content(pdf_path, prompt)}],
-            **self._reasoning_kwargs(),
-        )
-        return response.output_text
-
     def send_text_structured(
         self,
         prompt: str,
@@ -74,7 +66,7 @@ class FoundryClient:
         }
         if previous_response_id is not None:
             kwargs["previous_response_id"] = previous_response_id
-        response = self._client.responses.create(**kwargs)
+        response = self._create_with_backoff(**kwargs)
         return json.loads(response.output_text), response.id
 
     def send_pdf_structured(
@@ -85,7 +77,7 @@ class FoundryClient:
         thinking: bool = False,
     ) -> tuple[None, dict]:
         schema_name = schema.get("title", "output")
-        response = self._client.responses.create(
+        response = self._create_with_backoff(
             model=self.model,
             input=[{"role": "user", "content": self._pdf_content(pdf_path, prompt)}],
             **self._reasoning_kwargs(),
@@ -100,7 +92,7 @@ class FoundryClient:
         )
         return None, json.loads(response.output_text)
 
-    def _create_with_backoff(self, max_retries: int = 5, base_delay: float = 1.0, **kwargs) -> Any:
+    def _create_with_backoff(self, max_retries: int = 5, base_delay: float = 5.0, **kwargs) -> Any:
         for attempt in range(max_retries):
             try:
                 return self._client.responses.create(**kwargs)
