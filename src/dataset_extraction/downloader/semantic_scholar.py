@@ -22,7 +22,7 @@ class S2Paper:
     authors: list[str]
     open_access_pdf: str | None
     external_ids: dict[str, str] = field(default_factory=dict)
-    search_engine_id: str | None = None
+    paper_id: str | None = None
 
 
 class SemanticScholarClient:
@@ -82,20 +82,8 @@ class SemanticScholarClient:
                     authors=[a["name"] for a in (raw.get("authors") or []) if a.get("name")],
                     open_access_pdf=pdf_info.get("url"),
                     external_ids=raw.get("externalIds") or {},
-                    search_engine_id=raw.get("paperId"),
+                    paper_id=raw.get("paperId"),
                 )
         except Exception:
             logger.debug("S2 error for %r", title, exc_info=True)
         return None
-
-    def get_open_access_pdf(self, title: str) -> str | None:
-        paper = self.get_paper(title)
-        return paper.open_access_pdf if paper else None
-
-    def get_external_ids(self, title: str) -> dict[str, str]:
-        paper = self.get_paper(title)
-        return paper.external_ids if paper else {}
-
-    def get_venue_year(self, title: str) -> tuple[str | None, int | None]:
-        paper = self.get_paper(title)
-        return (paper.venue, paper.year) if paper else (None, None)
