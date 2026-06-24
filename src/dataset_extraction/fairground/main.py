@@ -29,7 +29,7 @@ from dataset_extraction.state.graph import DatasetWebsiteNodes, ProjectPageNodes
 from dataset_extraction.state.nodes import MetadataNode, DatasetWebsiteNode
 from dataset_extraction.state.paper import canonicalize_title, DatasetPaperNode, ProjectPageNode
 from dataset_extraction.state.queue import DatasetJob, Queue
-from dataset_extraction.fairground.state_loader import load_state
+from dataset_extraction.fairground.state_loader import FairgroundState, load_state
 from dataset_extraction.fairground import manual_download
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
@@ -263,14 +263,18 @@ def main() -> None:
     client = FoundryClient(**kwargs)
 
     state = load_state(working_dir)
+    run(state, working_dir, client, manual=args.manual)
+
+
+def run(state: FairgroundState, working_dir: Path, client, manual: bool = False) -> None:
 
     # Step 1 extract usages and enqueue
     extract_and_save_usages(working_dir, client, state.usage_nodes)
     enqueue_used_datasets(state.usage_nodes.all(), state.paper_info_db, state.queue, working_dir)
-    if args.manual:
+    if manual:
         manual_download.run(working_dir)
 
-    # Stap 2 extract metadata
+    # Step 2 extract metadata
     extract_and_save_metadata(state.queue, client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
     process_unprocessed_links(client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
     verify_databases(state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
