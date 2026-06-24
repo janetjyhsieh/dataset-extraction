@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 _SEARCH_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 _FIELDS = "title,openAccessPdf,externalIds,year,authors,venue,paperId"
 _RETRYABLE = {429, 500, 503}
+_MIN_INTERVAL = 1.0  # seconds between requests without an API key
 
 
 @dataclass
@@ -26,14 +27,23 @@ class S2Paper:
 
 
 class SemanticScholarClient:
-    def __init__(self, max_retries: int = 4):
+    def __init__(self, min_interval: float = _MIN_INTERVAL, max_retries: int = 4):
+        self._min_interval = min_interval
         self._max_retries = max_retries
+        self._last_call: float = 0.0
 
     def _headers(self) -> dict:
         api_key = os.environ.get("S2_API_KEY")
         return {"x-api-key": api_key} if api_key else {}
 
+    def _throttle(self) -> None:
+        elapsed = time.monotonic() - self._last_call
+        if elapsed < self._min_interval:
+            time.sleep(self._min_interval - elapsed)
+        self._last_call = time.monotonic()
+
     def _get(self, params: dict) -> requests.Response:
+        self._throttle()
         delay = 5
         request_timeout = 15
         additional_timeout = 5
@@ -53,6 +63,7 @@ class SemanticScholarClient:
                     resp.status_code, retry_after, attempt + 1, self._max_retries,
                 )
             time.sleep(retry_after)
+            self._throttle()
             delay *= 2
         raise requests.Timeout("S2 timed out after all retries")
 

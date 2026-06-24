@@ -1,7 +1,6 @@
 """
 TODO: make sure the paper finding (ExternalIDs, venue-based) rules are in the desired order.
 """
-import datetime
 import logging
 import re
 from pathlib import Path
@@ -128,7 +127,7 @@ def find_and_download_pdf(
             if _download_pdf(ext_url["url"], dest, node, ext_url["source"]):
                 return dest
 
-        venue_url = pdf_from_venue(s2_paper.external_ids, venue_year, title)
+        venue_url = pdf_from_venue(s2_paper.external_ids, title)
         if venue_url and _download_pdf(venue_url, dest, node, venue_source(s2_paper.external_ids)):
             return dest
 
