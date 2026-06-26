@@ -1,15 +1,40 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
 from dataset_extraction.state.graph import PaperInfoNodes
 from dataset_extraction.state.paper import PaperInfo, PdfInfo, canonicalize_title
+from dataset_extraction.state.paper import PdfDownloadSource
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.nodes import UsageNode
 
 logger = logging.getLogger("dataset_extraction.usage.process")
+
+def _find_index_entry(paper_title: str, working_dir: Path) -> dict | None:
+    index_path = working_dir / "index.jsonl"
+    if not index_path.exists():
+        return None
+    with open(index_path) as f:
+        for line in f:
+            if line.strip():
+                entry = json.loads(line)
+                if entry.get("title") == paper_title:
+                    return entry
+    return None
+
+
+def _is_original_source(usage: UsageNode):
+    if usage.source_paper.bibliographic_string == "(self)":
+        return True
+    if usage.source_paper.title is not None:
+        canonical_source_title = canonicalize_title(usage.source_paper.title)
+        canonical_title = canonicalize_title(usage.paper_title)
+        if canonical_source_title == canonical_title:
+            return True
+    return False
 
 
 def enqueue_used_datasets(
@@ -22,24 +47,49 @@ def enqueue_used_datasets(
     download_dir = working_dir / "discovered" / "pdfs"
 
     for usage in usages:
-        source_title = usage.source_paper.title
-        if not source_title:
-            logger.debug("'%s' has no source title, skipping", usage.dataset_name)
-            continue
+        if _is_original_source(usage):
+            logger.info("'%s' has no source title, original dataset", usage.dataset_name)
+            index_entry = _find_index_entry(usage.paper_title, working_dir)
+            canonical = canonicalize_title(usage.paper_title)
+            
+            if paper_info_db.exists(canonical):
+                logger.debug("'%s' already in graph or queue", source_title)
+                continue
+            
+            # TODO: pull pdf path from index.jsonl
+            pdf_path = working_dir / "pdfs" / f"{index_entry['id']}.pdf"
+            usage_paper_info = PaperInfo(
+                raw_title=usage.paper_title,
+                canonical_title=canonical,
+                pdf_info=PdfInfo(
+                    link_found=True, 
+                    download_success=True,
+                    url = index_entry["url"],
+                    pdf_file_path = str(pdf_path),
+                    pdf_download_source = PdfDownloadSource.direct
+                ),
+            )
 
-        canonical = canonicalize_title(source_title)
+        else:
+            source_title = usage.source_paper.title
+            if not source_title:
+                logger.debug("'%s' has no source title, skipping", usage.dataset_name)
+                continue
 
-        if paper_info_db.exists(canonical):
-            logger.debug("'%s' already in graph or queue", source_title)
-            continue
+            canonical = canonicalize_title(source_title)
 
-        logger.info("'%s' not in graph — looking up '%s'", usage.dataset_name, source_title)
-        usage_paper_info = PaperInfo(
-            raw_title=source_title,
-            canonical_title=canonical,
-            pdf_info=PdfInfo(link_found=False, download_success=False),
-        )
-        pdf_path = find_and_download_pdf(usage_paper_info, download_dir)
+            if paper_info_db.exists(canonical):
+                logger.debug("'%s' already in graph or queue", source_title)
+                continue
+
+            logger.info("'%s' not in graph — looking up '%s'", usage.dataset_name, source_title)
+            usage_paper_info = PaperInfo(
+                raw_title=source_title,
+                canonical_title=canonical,
+                pdf_info=PdfInfo(link_found=False, download_success=False),
+            )
+            pdf_path = find_and_download_pdf(usage_paper_info, download_dir)
+        
         paper_info_db.insert(usage_paper_info)
 
         if pdf_path is None:
