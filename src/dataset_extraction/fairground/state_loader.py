@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from dataset_extraction.state.graph import (
+from dataset_extraction.state.databases import (
     DatasetPaperNodes,
     DatasetWebsiteNodes,
     MetadataNodes,

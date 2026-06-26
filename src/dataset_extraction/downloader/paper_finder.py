@@ -11,7 +11,7 @@ from dataset_extraction.downloader.arxiv import ArxivClient
 from dataset_extraction.downloader.semantic_scholar import SemanticScholarClient
 from dataset_extraction.downloader.utils import titles_match
 from dataset_extraction.downloader.venues import pdf_from_venue, venue_source
-from dataset_extraction.state.paper import PaperInfo, PdfDownloadSource
+from dataset_extraction.state.paper_entries import PaperInfo, PdfDownloadSource
 
 logger = logging.getLogger(__name__)
 

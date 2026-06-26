@@ -4,8 +4,8 @@ import logging
 from pathlib import Path
 
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
-from dataset_extraction.state.graph import PaperInfoNodes
-from dataset_extraction.state.paper import PaperInfo, PdfInfo, canonicalize_title
+from dataset_extraction.state.databases import PaperInfoNodes
+from dataset_extraction.state.paper_entries import PaperInfo, PdfInfo, canonicalize_title
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.nodes import UsageNode
 

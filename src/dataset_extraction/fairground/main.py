@@ -25,10 +25,10 @@ from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResul
 from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.graph import MetadataNodes, PaperInfoNodes, DatasetPaperNodes
-from dataset_extraction.state.graph import DatasetWebsiteNodes, ProjectPageNodes
-from dataset_extraction.state.nodes import MetadataNode, DatasetWebsiteNode
-from dataset_extraction.state.paper import canonicalize_title, DatasetPaperNode, ProjectPageNode
+from dataset_extraction.state.databases import MetadataNodes, PaperInfoNodes, DatasetPaperNodes
+from dataset_extraction.state.databases import DatasetWebsiteNodes, ProjectPageNodes
+from dataset_extraction.state.dataset_entries import MetadataNode, DatasetWebsiteNode
+from dataset_extraction.state.paper_entries import canonicalize_title, DatasetPaperNode, ProjectPageNode
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.fairground.state_loader import FairgroundState, load_state
 from dataset_extraction.fairground import manual_download

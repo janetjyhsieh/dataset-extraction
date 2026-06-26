@@ -6,7 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from dataset_extraction.downloader.utils import titles_match
-from dataset_extraction.state.paper import PdfDownloadSource
+from dataset_extraction.state.paper_entries import PdfDownloadSource
 
 logger = logging.getLogger(__name__)
 

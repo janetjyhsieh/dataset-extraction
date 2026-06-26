@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
 from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResult
-from dataset_extraction.state.nodes import MetadataNode, DatasetWebsiteNode
-from dataset_extraction.state.paper import DatasetPaperNode, PaperInfo, PdfInfo, ProjectPageNode
+from dataset_extraction.state.dataset_entries import MetadataNode, DatasetWebsiteNode
+from dataset_extraction.state.paper_entries import DatasetPaperNode, PaperInfo, PdfInfo, ProjectPageNode
 
 _T = TypeVar("_T", bound=BaseModel)
 
