@@ -105,7 +105,8 @@ def _fetch_url(args: dict) -> str:
             if len(content) > 1 * 1024 * 1024:
                 return "Error: response exceeds 1 MB limit."
             return content.decode("utf-8", errors="replace")
-    except urllib.error.URLError as e:
+    except Exception as e:
+        logger.warning(f"fetch failed: {e}")
         return f"Fetch failed: {e}"
 
 
@@ -157,8 +158,8 @@ def extract_webpage(
     if not matched_infos:
         msg = f"No dataset names matched for {url!r}. Expected: {dataset_names}."
         logger.warning(msg)
-    if len(matched_infos) < len(dataset_names):
+    if matched_infos and len(matched_infos) < len(dataset_names):
         unmatched = [n for i, n in enumerate(dataset_names) if i not in matched_indices]
-        logger.warning("Partial match (%d/%d) for %r — no info for: %s", len(matched_info), len(dataset_names), url, unmatched)
+        logger.warning("Partial match (%d/%d) for %r — no info for: %s", len(matched_infos), len(dataset_names), url, unmatched)
     website_result.datasets_info = matched_infos
     return website_result, matched_indices
