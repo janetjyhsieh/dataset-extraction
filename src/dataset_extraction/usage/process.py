@@ -55,8 +55,6 @@ def enqueue_used_datasets(
                 logger.debug("'%s' already in graph or queue", source_title)
                 continue
             
-            # TODO: pull pdf path from index.jsonl
-            pdf_path = working_dir / "pdfs" / f"{index_entry['id']}.pdf"
             usage_paper_info = PaperInfo(
                 raw_title=usage.paper_title,
                 canonical_title=canonical,
@@ -64,7 +62,7 @@ def enqueue_used_datasets(
                     link_found=True, 
                     download_success=True,
                     url = index_entry["url"],
-                    pdf_file_path = str(pdf_path),
+                    pdf_file_path = index_entry["pdf_path"],
                     pdf_download_source = PdfDownloadSource.direct
                 ),
             )
