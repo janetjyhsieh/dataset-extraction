@@ -49,13 +49,14 @@ def enqueue_used_datasets(
     pdf_path = None
     for usage in usages:
         if _is_original_source(usage):
-            logger.info("'%s' has no source title, original dataset", usage.dataset_name)
             index_entry = _find_index_entry(usage.paper_title, working_dir)
             canonical = canonicalize_title(usage.paper_title)
             
             if paper_info_db.exists(canonical):
                 logger.debug("'%s' already in graph or queue", source_title)
                 continue
+
+            logger.info("'%s' has no source title, original dataset", usage.dataset_name)
             
             pdf_path = index_entry["pdf_path"]
             usage_paper_info = PaperInfo(
