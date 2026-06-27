@@ -18,7 +18,7 @@ from pathlib import Path
 import requests
 
 from dataset_extraction.log import setup_logging
-from dataset_extraction.state.paper import PdfDownloadSource, PdfInfo
+from dataset_extraction.state.paper_entries import PdfDownloadSource, PdfInfo
 from dataset_extraction.state.queue import DatasetJob
 from dataset_extraction.fairground.state_loader import load_state
 

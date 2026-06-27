@@ -22,7 +22,7 @@ from pathlib import Path
 from dataset_extraction.clients.foundry import DEFAULT_MODEL
 from dataset_extraction.log import setup_logging
 from dataset_extraction.mapper.map import map_datasets
-from dataset_extraction.state.paper import canonicalize_title
+from dataset_extraction.state.paper_entries import canonicalize_title
 from dataset_extraction.usage.nodes import UsageNode
 from dataset_extraction.fairground.state_loader import load_state
 
