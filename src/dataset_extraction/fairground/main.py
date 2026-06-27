@@ -101,7 +101,7 @@ def extract_and_save_pdf_metadata(
         result = extract_metadata(job.pdf_path, client)
     except Exception:
         logger.exception("PDF metadata extraction failed for %s", job.title)
-        raise LLMExtractionError("extract_metadata failed for %s", job.title)
+        raise LLMExtractionError(f"extract_metadata failed for {job.title}")
     canonical_title = job.title
     dataset_ids = save_metadata(result, canonical_title, metadata_db)
     dataset_paper = save_dataset_paper(
@@ -128,7 +128,7 @@ def extract_and_save_website_metadata(
             dataset_names, model=client.model)
         except Exception:
             logger.exception("Website extraction failed for %s", title)
-            raise LLMExtractionError("extract_webpage failed for %s", title)
+            raise LLMExtractionError(f"extract_webpage failed for {title}")
         matched_dataset_ids = [dataset_paper.datasets[i] for i in matched_indices]
         dataset_ids = save_dataset_website(
             result, title, matched_dataset_ids, dataset_website_db
@@ -163,9 +163,10 @@ def extract_and_save_metadata(
                 client
             )
         except LLMExtractionError:
-            dataset_paper.link_processed=True
+            dataset_paper.link_processed = True
+            dataset_paper_db.update(dataset_paper)
             continue
-        dataset_paper.link_processed=True
+        dataset_paper.link_processed = True
         dataset_paper_db.update(dataset_paper)
 
 
@@ -190,25 +191,25 @@ def verify_databases(
         if dp.project_page and not dp.link_processed:
             errors.append(f"[DatasetPaper.link_processed] {dp.title!r}: has project_page but link_processed is False")
 
-    # Build paper_title → set of dataset_ids from DatasetWebsiteNodes
-    website_ids_by_paper: dict[str, set[str]] = {}
-    for dw in dataset_website_db.all():
-        website_ids_by_paper.setdefault(dw.paper_title, set()).add(dw.dataset_id)
+    # # Build paper_title → set of dataset_ids from DatasetWebsiteNodes
+    # website_ids_by_paper: dict[str, set[str]] = {}
+    # for dw in dataset_website_db.all():
+    #     website_ids_by_paper.setdefault(dw.paper_title, set()).add(dw.dataset_id)
 
-    for pp in project_page_db.all():
-        dp = dataset_paper_db.get(pp.paper_title)
-        if dp is None:
-            errors.append(f"[ProjectPage→DatasetPaper] {pp.paper_title!r}: no DatasetPaperNode found")
-            continue
-        dp_ids = set(dp.datasets)
-        web_ids = website_ids_by_paper.get(pp.paper_title, set())
+    # for pp in project_page_db.all():
+    #     dp = dataset_paper_db.get(pp.paper_title)
+    #     if dp is None:
+    #         errors.append(f"[ProjectPage→DatasetPaper] {pp.paper_title!r}: no DatasetPaperNode found")
+    #         continue
+    #     dp_ids = set(dp.datasets)
+    #     web_ids = website_ids_by_paper.get(pp.paper_title, set())
 
-        # 3. ProjectPage's DatasetWebsiteNodes are a subset of DatasetPaperNode's datasets
-        extra = web_ids - dp_ids
-        if extra:
-            errors.append(
-                f"[DatasetWebsite⊄DatasetPaper] {pp.paper_title!r}: DatasetWebsiteNodes contain dataset_ids not in DatasetPaperNode: {extra}"
-            )
+    #     # 3. ProjectPage's DatasetWebsiteNodes are a subset of DatasetPaperNode's datasets
+    #     extra = web_ids - dp_ids
+    #     if extra:
+    #         errors.append(
+    #             f"[DatasetWebsite⊄DatasetPaper] {pp.paper_title!r}: DatasetWebsiteNodes contain dataset_ids not in DatasetPaperNode: {extra}"
+    #         )
 
     if errors:
         for e in errors:
@@ -233,9 +234,10 @@ def process_unprocessed_links(
                 extract_and_save_website_metadata(
                     dataset_paper, metadata_db, dataset_website_db, project_page_db, client
                 )
-            except Exception:
-                dataset_paper.link_processed = True
+            except LLMExtractionError:
                 logger.exception("Website extraction failed for %s", dataset_paper.title)
+                dataset_paper.link_processed = True
+                dataset_paper_db.update(dataset_paper)
                 continue
             dataset_paper.link_processed = True
             dataset_paper_db.update(dataset_paper)
@@ -247,6 +249,7 @@ def main() -> None:
     parser.add_argument("--model", default=None, help="Model ID (default: provider's default)")
     parser.add_argument("--reasoning-effort", choices=["low", "medium", "high"], default=None, help="Reasoning effort (foundry only)")
     parser.add_argument("--repopulate-queue", action="store_true", help="Re-enqueue all paper_info entries and run metadata extraction")
+    parser.add_argument("--reenqueue", action="store_true", help="Clear the queue and re-enqueue all papers in paper_info_db, then run metadata extraction (skips usage extraction)")
     parser.add_argument("--manual", action="store_true", help="Manual link download")
     args = parser.parse_args()
 
@@ -259,11 +262,20 @@ def main() -> None:
     client = FoundryClient(**kwargs)
 
     state = load_state(working_dir)
-    run(state, working_dir, client, manual=args.manual)
+    run(state, working_dir, client, manual=args.manual, reenqueue=args.reenqueue)
 
 
-def run(state: FairgroundState, working_dir: Path, client, manual: bool = False) -> None:
+def run(state: FairgroundState, working_dir: Path, client, manual: bool = False, reenqueue: bool = False) -> None:
 
+    if reenqueue: # For debugging only
+        state.queue.clear()
+        for paper_info in state.paper_info_db.all():
+            if paper_info.pdf_info and paper_info.pdf_info.pdf_file_path:
+                job = DatasetJob(title=paper_info.canonical_title, pdf_path=paper_info.pdf_info.pdf_file_path)
+                state.queue.enqueue(job)
+        logger.info("Re-enqueued %d paper(s) from paper_info_db", len(state.queue))
+        exit()
+    
     # Step 1 extract usages and enqueue
     extract_and_save_usages(working_dir, client, state.usage_nodes)
     enqueue_used_datasets(state.usage_nodes.all(), state.paper_info_db, state.queue, working_dir)

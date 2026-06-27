@@ -67,6 +67,10 @@ class Queue(Generic[T]):
         with open(self._path) as f:
             return [self._model.model_validate_json(line) for line in f if line.strip()]
 
+    def clear(self) -> None:
+        """Remove all jobs from the queue."""
+        self._path.write_text("")
+
     def __len__(self) -> int:
         with open(self._path) as f:
             return sum(1 for line in f if line.strip())
