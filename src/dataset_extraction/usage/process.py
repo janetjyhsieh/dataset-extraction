@@ -7,6 +7,7 @@ from pathlib import Path
 from dataset_extraction.downloader.paper_finder import find_and_download_pdf
 from dataset_extraction.state.databases import PaperInfoNodes
 from dataset_extraction.state.paper_entries import PaperInfo, PdfInfo, canonicalize_title
+from dataset_extraction.state.paper_entries import PdfDownloadSource
 from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.usage.nodes import UsageNode
 
@@ -45,6 +46,7 @@ def enqueue_used_datasets(
     """Ensure every used dataset's source paper is in the graph or queued for discovery."""
     download_dir = working_dir / "discovered" / "pdfs"
 
+    pdf_path = None
     for usage in usages:
         if _is_original_source(usage):
             logger.info("'%s' has no source title, original dataset", usage.dataset_name)
@@ -55,14 +57,15 @@ def enqueue_used_datasets(
                 logger.debug("'%s' already in graph or queue", source_title)
                 continue
             
+            pdf_path = index_entry["pdf_path"]
             usage_paper_info = PaperInfo(
                 raw_title=usage.paper_title,
                 canonical_title=canonical,
                 pdf_info=PdfInfo(
                     link_found=True, 
                     download_success=True,
-                    url = index_entry["url"],
-                    pdf_file_path = index_entry["pdf_path"],
+                    url = index_entry["pdf_url"],
+                    pdf_file_path = pdf_path,
                     pdf_download_source = PdfDownloadSource.direct
                 ),
             )

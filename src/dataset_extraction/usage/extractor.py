@@ -47,7 +47,7 @@ def extract_and_save_usages(
     logger.info("Found %d entries in index.jsonl", len(entries))
 
     for entry in entries:
-        paper_id = entry["id"]
+        paper_id = entry["paper_id"]
         paper_title = entry["title"]
         pdf = working_dir / "pdfs" / f"{paper_id}.pdf"
 
