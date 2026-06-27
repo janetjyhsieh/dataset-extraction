@@ -7,7 +7,7 @@ import openpyxl
 from dataset_extraction.corpus.corpus import CorpusSource, SourcePaper
 from dataset_extraction.corpus.utils import keywords_in_string
 
-logger = logging.getLogger("dataset_extraction.corpus.import_xlsx")
+logger = logging.getLogger("dataset_extraction.corpus.xlsx")
 
 _ANNOTATIONS_PATH = Path(__file__).parents[4] / "gdrive" / "annotations.xlsx"
 _SHEET_NAME = "2. Papers"

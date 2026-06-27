@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dataset_extraction.log import setup_logging
 from dataset_extraction.corpus.corpus import CorpusSource
-from dataset_extraction.corpus.import_xlsx import XslxSource
+from dataset_extraction.corpus.xlsx import XslxSource
 
 _ANNOTATIONS_PATH = Path(__file__).parents[4] / "gdrive" / "annotations.xlsx"
 
