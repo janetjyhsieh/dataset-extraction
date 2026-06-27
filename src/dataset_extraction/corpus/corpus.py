@@ -13,7 +13,7 @@ class SourcePaper(BaseModel):
     paper_id: str
     title: str
     authors: list[str]
-    pdf_url: str
+    pdf_url: str | None = None
     pdf_path: str | None = None
     venue: str | None = None
     year: int | None = None
