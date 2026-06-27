@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Evidence(BaseModel):
@@ -31,3 +31,10 @@ class MetadataExtractionResult(BaseModel):
     project_page: str | None = Field(description="URL to the project web page as reported in the paper; prefer the official project/landing page if several links are given. null if no public release URL is reported.")
     documents_dataset: bool = Field(description="True if the paper introduces, constructs, curates, or makes available a dataset as a central artifact. False if no qualifying dataset is documented.")
     datasets: list[DatasetMetadata] = Field(description="One entry per distinct qualifying dataset. Empty array if documents_dataset is false.")
+
+    @field_validator("project_page", mode="before")
+    @classmethod
+    def strip_trailing_periods(cls, v):
+        if isinstance(v, str):
+            return v.rstrip(".")
+        return v
