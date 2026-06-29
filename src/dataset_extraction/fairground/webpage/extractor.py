@@ -11,6 +11,12 @@ logger = logging.getLogger(__name__)
 
 from .webpage import WebsiteExtractionResult
 
+_MODEL_FETCH_LIMITS: dict[str, int] = {
+    "gpt-5.4": 400_000,
+    "gpt-5.4-nano": 160_000,
+}
+_DEFAULT_FETCH_LIMIT = 160_000
+
 PROMPT = """\
 You are a research data assistant. Your job is to determine how a dataset published alongside \
 a research paper can be accessed.
@@ -91,23 +97,26 @@ def _normalize_url(url: str) -> str:
     ))
 
 
-def _fetch_url(args: dict) -> str:
-    url = _normalize_url(args["url"])
-    if url.lower().endswith((".pdf", ".zip", ".tar", ".gz", ".tar.gz")):
-        return "Error: cannot fetch binary file types with this tool."
-    req = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; dataset-extraction/1.0)"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            content = resp.read(1 * 1024 * 1024 + 1)
-            if len(content) > 1 * 1024 * 1024:
-                return "Error: response exceeds 1 MB limit."
-            return content.decode("utf-8", errors="replace")
-    except Exception as e:
-        logger.warning(f"fetch failed: {e}")
-        return f"Fetch failed: {e}"
+def _make_fetch_url(char_limit: int):
+    def _fetch_url(args: dict) -> str:
+        url = _normalize_url(args["url"])
+        if url.lower().endswith((".pdf", ".zip", ".tar", ".gz", ".tar.gz")):
+            return "Error: cannot fetch binary file types with this tool."
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; dataset-extraction/1.0)"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                raw = resp.read(4 * char_limit)
+                text = raw.decode("utf-8", errors="replace")
+                if len(text) > char_limit:
+                    return f"Error: response exceeds {char_limit:,} character limit."
+                return text
+        except Exception as e:
+            logger.warning("fetch failed: %s", e)
+            return f"Fetch failed: {e}"
+    return _fetch_url
 
 
 def _normalize(s: str) -> str:
@@ -146,10 +155,11 @@ def extract_webpage(
         .replace("DATASET_NAMES", "\n".join(f"- {d}" for d in dataset_names))
     )
 
+    char_limit = _MODEL_FETCH_LIMITS.get(model, _DEFAULT_FETCH_LIMIT)
     result = client.run_agent(
         prompt=prompt,
         tools=[_FETCH_TOOL],
-        tool_handlers={"fetch_webpage": _fetch_url},
+        tool_handlers={"fetch_webpage": _make_fetch_url(char_limit)},
         output_schema=WebsiteExtractionResult.model_json_schema(),
         max_tool_calls=6,
     )
