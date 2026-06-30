@@ -57,6 +57,7 @@ _PAPER_COLUMNS = [
 
 _COMPUTED_COLUMNS = [
     "num_usages",
+    "tasks",
 ]
 
 _COLUMNS = _METADATA_COLUMNS + _WEBSITE_COLUMNS + _PAPER_COLUMNS + _COMPUTED_COLUMNS
@@ -86,18 +87,32 @@ def _paper_row(dp, pp, pi) -> dict:
     }
 
 
-def _build_computed_lookups(usage_map: dict) -> dict[str, dict]:
+def _build_computed_lookups(usage_map: dict, usage_nodes) -> dict[str, dict]:
     usage_counts: dict[str, int] = {}
-    for entry in usage_map.values():
+    tasks_by_dataset: dict[str, set] = {}
+
+    doc_tasks: dict[str, list[str]] = {
+        str(doc.doc_id): doc.get("tasks", [])
+        for doc in usage_nodes._table.all()
+    }
+
+    for doc_id, entry in usage_map.items():
         if entry is not None and entry.get("dataset_id"):
             did = entry["dataset_id"]
             usage_counts[did] = usage_counts.get(did, 0) + 1
-    return {"usage_counts": usage_counts}
+            for task in doc_tasks.get(doc_id, []):
+                tasks_by_dataset.setdefault(did, set()).add(task)
+
+    return {
+        "usage_counts": usage_counts,
+        "tasks_by_dataset": {did: sorted(tasks) for did, tasks in tasks_by_dataset.items()},
+    }
 
 
 def _computed_row(dataset_id: str, lookups: dict) -> dict:
     return {
         "num_usages": lookups["usage_counts"].get(dataset_id, 0),
+        "tasks": lookups["tasks_by_dataset"].get(dataset_id, []),
     }
 
 
@@ -115,7 +130,6 @@ def run(working_dir: Path) -> pd.DataFrame:
         if entry is not None and entry.get("dataset_id")
     }
     logger.info("Found %d unique dataset_ids in usage_map", len(dataset_ids))
-    computed_lookups = _build_computed_lookups(usage_map)
 
     state = load_state(working_dir)
     metadata_db = state.metadata_db
@@ -123,6 +137,8 @@ def run(working_dir: Path) -> pd.DataFrame:
     dataset_paper_db = state.dataset_paper_db
     project_page_db = state.project_page_db
     paper_info_db = state.paper_info_db
+
+    computed_lookups = _build_computed_lookups(usage_map, state.usage_nodes)
 
     rows = []
     for dataset_id in sorted(dataset_ids):
