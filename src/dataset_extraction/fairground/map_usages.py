@@ -48,17 +48,13 @@ def run(working_dir: Path, model: str = DEFAULT_MODEL) -> None:
     databases_dir = working_dir / "fg" / "databases"
 
     output_path = databases_dir / "usage_map.json"
-    output = _load_output(output_path)
+    output = {}
 
     raw_docs = usage_nodes._table.all()
     logger.info("Processing %d usages", len(raw_docs))
 
     for doc in raw_docs:
         doc_id = str(doc.doc_id)
-        if doc_id in output:
-            logger.debug("Skipping usage %s (already mapped)", doc_id)
-            continue
-
         usage = UsageNode.model_validate(dict(doc))
 
         source_title = usage.source_paper.title
