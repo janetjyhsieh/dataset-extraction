@@ -16,15 +16,18 @@ _MODEL_FETCH_LIMITS: dict[str, int] = {
     "gpt-5.4-nano": 160_000,
 }
 _DEFAULT_FETCH_LIMIT = 160_000
+_MAX_TOOL_CALLS = 6
 
-PROMPT = """\
+PROMPT = f"""\
 You are a research data assistant. Your job is to determine how a dataset published alongside \
 a research paper can be accessed.
 
 You have been given a landing page URL for the paper or its datasets. Explore it thoroughly: \
 follow links to GitHub repositories, README files, LICENSE files, dataset hosting pages \
 (e.g. HuggingFace, Zenodo, Figshare, Google Drive), and any linked download instructions. \
-Stop exploring a branch once you have confirmed or ruled out the relevant information.
+Stop exploring a branch once you have confirmed or ruled out the relevant information. \
+Keep in mind that you only have {_MAX_TOOL_CALLS} tool calls, including the final \
+extract_result call.
 
 You will be given user inputs in this format:
 The paper is: PAPER_NAME
@@ -161,7 +164,7 @@ def extract_webpage(
         tools=[_FETCH_TOOL],
         tool_handlers={"fetch_webpage": _make_fetch_url(char_limit)},
         output_schema=WebsiteExtractionResult.model_json_schema(),
-        max_tool_calls=6,
+        max_tool_calls=_MAX_TOOL_CALLS,
     )
     website_result = WebsiteExtractionResult.model_validate(result)
     matched_infos, matched_indices = _validate_and_fix(website_result, dataset_names)
