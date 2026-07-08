@@ -13,7 +13,7 @@ _RETRYABLE = {429, 500, 503}
 
 
 class ArxivClient:
-    def __init__(self, min_interval: float = _MIN_INTERVAL, max_retries: int = 4):
+    def __init__(self, min_interval: float = _MIN_INTERVAL, max_retries: int = 3):
         self._min_interval = min_interval
         self._max_retries = max_retries
         self._last_call: float = 0.0
