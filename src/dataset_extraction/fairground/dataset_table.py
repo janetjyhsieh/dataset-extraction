@@ -58,6 +58,8 @@ _PAPER_COLUMNS = [
 _COMPUTED_COLUMNS = [
     "num_usages",
     "tasks",
+    "aliases",
+    "usage_papers",
 ]
 
 _COLUMNS = _METADATA_COLUMNS + _WEBSITE_COLUMNS + _PAPER_COLUMNS + _COMPUTED_COLUMNS
@@ -90,9 +92,11 @@ def _paper_row(dp, pp, pi) -> dict:
 def _build_computed_lookups(usage_map: dict, usage_nodes) -> dict[str, dict]:
     usage_counts: dict[str, int] = {}
     tasks_by_dataset: dict[str, set] = {}
+    aliases_by_dataset: dict[str, set] = {}
+    usage_papers_by_dataset: dict[str, set] = {}
 
-    doc_tasks: dict[str, list[str]] = {
-        str(doc.doc_id): doc.get("tasks", [])
+    doc_info: dict[str, dict] = {
+        str(doc.doc_id): doc
         for doc in usage_nodes._table.all()
     }
 
@@ -100,12 +104,21 @@ def _build_computed_lookups(usage_map: dict, usage_nodes) -> dict[str, dict]:
         if entry is not None and entry.get("dataset_id"):
             did = entry["dataset_id"]
             usage_counts[did] = usage_counts.get(did, 0) + 1
-            for task in doc_tasks.get(doc_id, []):
+            doc = doc_info.get(doc_id, {})
+            for task in doc.get("tasks", []):
                 tasks_by_dataset.setdefault(did, set()).add(task)
+            aliases_by_dataset.setdefault(did, set()).add(doc.get("dataset_name", ""))
+            for alias in doc.get("aliases", []):
+                aliases_by_dataset[did].add(alias)
+            paper_title = doc.get("paper_title")
+            if paper_title:
+                usage_papers_by_dataset.setdefault(did, set()).add(paper_title)
 
     return {
         "usage_counts": usage_counts,
         "tasks_by_dataset": {did: sorted(tasks) for did, tasks in tasks_by_dataset.items()},
+        "aliases_by_dataset": {did: sorted(a for a in aliases if a) for did, aliases in aliases_by_dataset.items()},
+        "usage_papers_by_dataset": {did: sorted(titles) for did, titles in usage_papers_by_dataset.items()},
     }
 
 
@@ -113,6 +126,8 @@ def _computed_row(dataset_id: str, lookups: dict) -> dict:
     return {
         "num_usages": lookups["usage_counts"].get(dataset_id, 0),
         "tasks": lookups["tasks_by_dataset"].get(dataset_id, []),
+        "aliases": lookups["aliases_by_dataset"].get(dataset_id, []),
+        "usage_papers": lookups["usage_papers_by_dataset"].get(dataset_id, []),
     }
 
 
