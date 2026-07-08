@@ -53,14 +53,6 @@
 
   <scope>
     <title>WHICH DATASET USAGE TO INCLUDE</title>
-    <general_rules>
-      Only extract datasets used in the MAIN experiments that support the paper's central claims. Exclude:
-      <exclusions>
-        <exclusion>Datasets used ONLY in experiments that the paper's own authors explicitly label as "toy", "illustrative", or "proof-of-concept"</exclusion>
-        <exclusion>Datasets used in experiments which appear ONLY in the appendix or supplemental materials</exclusion>
-        <exclusion>Datasets mentioned only in related work, background, or as prior-art comparisons — i.e. not actually run by the authors in their own experiments</exclusion>
-      </exclusions>
-    </general_rules>
     <training_datasets>
       <include>Datasets used for training performed in this paper</include>
       <include>Fine-tuning datasets if the authors fine-tune a pre-trained model</include>
