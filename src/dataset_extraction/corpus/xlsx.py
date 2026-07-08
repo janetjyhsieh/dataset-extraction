@@ -36,6 +36,9 @@ class XslxSource(CorpusSource):
             if not source or source not in paper_sources:
                 continue
 
+            if row[col["STATUS"]] != "DONE":
+                continue
+
             paper_id = row[col["paper_id"]]
             if not paper_id or paper_id in self.paper_ids:
                 continue
