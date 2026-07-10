@@ -134,6 +134,7 @@ def _computed_row(dataset_id: str, lookups: dict) -> dict:
 def run(working_dir: Path) -> pd.DataFrame:
     databases_dir = working_dir / "fg" / "databases"
     usage_map_path = databases_dir / "usage_map.json"
+    output_dir = working_dir / "fg" / "output"
 
     if not usage_map_path.exists():
         raise FileNotFoundError(f"usage_map.json not found at {usage_map_path}")
@@ -173,7 +174,7 @@ def run(working_dir: Path) -> pd.DataFrame:
 
     df = pd.DataFrame(rows, columns=_COLUMNS)
 
-    out_path = databases_dir / "dataset_table.csv"
+    out_path = output_dir / "dataset_table.csv"
     df.to_csv(out_path, index=False)
     logger.info("Saved %d rows to %s", len(df), out_path)
     return df

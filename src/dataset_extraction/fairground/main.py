@@ -33,6 +33,7 @@ from dataset_extraction.state.queue import DatasetJob, Queue
 from dataset_extraction.fairground.state_loader import FairgroundState, load_state
 from dataset_extraction.fairground import manual_download
 from dataset_extraction.fairground import map_usages
+from dataset_extraction.fairground import dataset_usage_table, dataset_table
 
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
@@ -288,8 +289,10 @@ def run(state: FairgroundState, working_dir: Path, client, manual: bool = False,
     process_unprocessed_links(client, state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
     verify_databases(state.metadata_db, state.dataset_paper_db, state.dataset_website_db, state.project_page_db)
     
-    # Step 3 generate the dataset table
+    # Step 3 generate the output files and tables
     map_usages.run(working_dir)
+    dataset_usage_table(working_dir)
+    dataset_table.run(working_dir)
 
     logger.info("Done. Results in %s", working_dir)
 

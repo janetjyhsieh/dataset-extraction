@@ -45,9 +45,11 @@ def run(working_dir: Path, model: str = DEFAULT_MODEL) -> None:
     dataset_metadata_db = state.metadata_db
     dataset_paper_db = state.dataset_paper_db
 
-    databases_dir = working_dir / "fg" / "databases"
+    output_dir = working_dir / "fg" / "output"
 
-    output_path = databases_dir / "usage_map.json"
+    output_path = output_dir / "usage_map.json"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
     output = {}
 
     raw_docs = usage_nodes._table.all()
