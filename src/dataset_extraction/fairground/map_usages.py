@@ -46,9 +46,9 @@ def run(working_dir: Path, model: str = DEFAULT_MODEL) -> None:
     dataset_paper_db = state.dataset_paper_db
 
     output_dir = working_dir / "fg" / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     output_path = output_dir / "usage_map.json"
-    output_path.mkdir(parents=True, exist_ok=True)
     
     output = {}
 

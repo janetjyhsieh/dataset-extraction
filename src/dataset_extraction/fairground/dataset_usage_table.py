@@ -30,7 +30,7 @@ def _to_snake(s: str) -> str:
     return s.strip().lower().replace(" ", "_").replace("-", "_")
 
 def _dataset_full_name(row) -> str:
-    parts = [row.get("dataset_name", ""), row.get("dataset_version", ""), row.get("dataset_variant", "")]
+    parts = [row["dataset_name"], row["dataset_version"], row["dataset_variant"]]
     return "-".join(_to_snake(str(p)) for p in parts if p is not np.nan)
 
 def _combine_lists(series):

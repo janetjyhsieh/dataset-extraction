@@ -43,7 +43,7 @@ def _urls_from_external_ids(external_ids: dict) -> str | None:
         url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{pmc_id}/pdf"
         logger.debug("Found PubMedCentral ID: %s → %s", pmc_id, url)
         external_urls.append(
-            {"source": PdfDownloadSource.pubmedcentral, "url": url}
+            {"source": PdfDownloadSource.s2_pubmedcentral, "url": url}
         )
 
     return external_urls

@@ -132,9 +132,8 @@ def _computed_row(dataset_id: str, lookups: dict) -> dict:
 
 
 def run(working_dir: Path) -> pd.DataFrame:
-    databases_dir = working_dir / "fg" / "databases"
-    usage_map_path = databases_dir / "usage_map.json"
     output_dir = working_dir / "fg" / "output"
+    usage_map_path = output_dir / "usage_map.json"
 
     if not usage_map_path.exists():
         raise FileNotFoundError(f"usage_map.json not found at {usage_map_path}")

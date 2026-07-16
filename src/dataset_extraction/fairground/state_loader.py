@@ -26,8 +26,10 @@ class FairgroundState:
 
 
 def load_state(working_dir: Path) -> FairgroundState:
+    usage_state_dir = working_dir / "state"
     state_dir = working_dir / "fg" / "state"
     databases_dir = working_dir / "fg" / "databases"
+    usage_state_dir.mkdir(parents=True, exist_ok=True)
     state_dir.mkdir(parents=True, exist_ok=True)
     databases_dir.mkdir(parents=True, exist_ok=True)
     return FairgroundState(
@@ -37,5 +39,5 @@ def load_state(working_dir: Path) -> FairgroundState:
         project_page_db=ProjectPageNodes(databases_dir / "project_page_nodes.json"),
         paper_info_db=PaperInfoNodes(state_dir / "paper_info_nodes.json"),
         queue=Queue(DatasetJob, state_dir / "dataset_queue.jsonl"),
-        usage_nodes=UsageNodes(working_dir / "state" / "usages.json"),
+        usage_nodes=UsageNodes(usage_state_dir / "usages.json"),
     )

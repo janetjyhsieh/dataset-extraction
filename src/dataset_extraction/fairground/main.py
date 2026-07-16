@@ -248,26 +248,36 @@ def process_unprocessed_links(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--working-dir", required=True, help="Directory containing pdfs/ and state/")
-    parser.add_argument("--model", default=None, help="Model ID (default: provider's default)")
+    parser.add_argument("--model", default="gpt-5.4-nano", help="Model ID for metadata/website extraction")
     parser.add_argument("--reasoning-effort", choices=["low", "medium", "high"], default=None, help="Reasoning effort (foundry only)")
     parser.add_argument("--repopulate-queue", action="store_true", help="Re-enqueue all paper_info entries and run metadata extraction")
     parser.add_argument("--reenqueue", action="store_true", help="Clear the queue and re-enqueue all papers in paper_info_db, then run metadata extraction (skips usage extraction)")
+    parser.add_argument("--usage-model", default="gpt-5.4", help="Model ID for usage extraction")
     parser.add_argument("--manual", action="store_true", help="Manual link download")
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
     setup_logging(working_dir / "fg" / "logs")
 
-    kwargs = {} if args.model is None else {"model": args.model}
+    kwargs = {"model": args.model}
     if args.reasoning_effort is not None:
         kwargs["reasoning_effort"] = args.reasoning_effort
     client = FoundryClient(**kwargs)
 
+    usage_kwargs = {"model": args.usage_model}
+    if args.reasoning_effort is not None:
+        usage_kwargs["reasoning_effort"] = args.reasoning_effort
+    usage_client = FoundryClient(**usage_kwargs)
+
     state = load_state(working_dir)
-    run(state, working_dir, client, manual=args.manual, reenqueue=args.reenqueue)
+    run(state, working_dir, client, usage_client, manual=args.manual, 
+        reenqueue=args.reenqueue)
 
 
-def run(state: FairgroundState, working_dir: Path, client, manual: bool = False, reenqueue: bool = False) -> None:
+def run(state: FairgroundState, working_dir: Path, client, usage_client, 
+        manual: bool = False, reenqueue: bool = False) -> None:
+    if usage_client is None:
+        usage_client = client
 
     if reenqueue: # For debugging only
         state.queue.clear()
@@ -279,7 +289,7 @@ def run(state: FairgroundState, working_dir: Path, client, manual: bool = False,
         exit()
     
     # Step 1 extract usages and enqueue
-    extract_and_save_usages(working_dir, client, state.usage_nodes)
+    extract_and_save_usages(working_dir, usage_client, state.usage_nodes)
     enqueue_used_datasets(state.usage_nodes.all(), state.paper_info_db, state.queue, working_dir)
     if manual:
         manual_download.run(working_dir)
@@ -291,7 +301,7 @@ def run(state: FairgroundState, working_dir: Path, client, manual: bool = False,
     
     # Step 3 generate the output files and tables
     map_usages.run(working_dir)
-    dataset_usage_table(working_dir)
+    dataset_usage_table.run(working_dir)
     dataset_table.run(working_dir)
 
     logger.info("Done. Results in %s", working_dir)
