@@ -8,6 +8,7 @@ from dataset_extraction.log import setup_logging
 from dataset_extraction.corpus.corpus import CorpusSource
 from dataset_extraction.corpus.xlsx import XslxSource
 from dataset_extraction.corpus.openreview import OpenReviewSource
+from dataset_extraction.corpus.cvf import CvfSource
 
 _ANNOTATIONS_PATH = Path(__file__).parents[4] / "gdrive" / "annotations.xlsx"
 
@@ -85,6 +86,9 @@ def main() -> None:
         )
         corpus_source = OpenReviewSource(working_dir, index_path, client)
         new_papers = corpus_source.get_papers(venue=args.venue, keywords=args.keywords)
+    elif args.source == "cvf":
+        corpus_source = CvfSource(working_dir, index_path)
+        new_papers = corpus_source.get_papers(venue=args.venue, year=args.year, keywords=args.keywords)
     else:
         raise NotImplementedError(f"Corpus source {args.source!r} not implemented")
     
