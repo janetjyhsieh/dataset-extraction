@@ -193,26 +193,6 @@ def verify_databases(
         if dp.project_page and not dp.link_processed:
             errors.append(f"[DatasetPaper.link_processed] {dp.title!r}: has project_page but link_processed is False")
 
-    # # Build paper_title → set of dataset_ids from DatasetWebsiteNodes
-    # website_ids_by_paper: dict[str, set[str]] = {}
-    # for dw in dataset_website_db.all():
-    #     website_ids_by_paper.setdefault(dw.paper_title, set()).add(dw.dataset_id)
-
-    # for pp in project_page_db.all():
-    #     dp = dataset_paper_db.get(pp.paper_title)
-    #     if dp is None:
-    #         errors.append(f"[ProjectPage→DatasetPaper] {pp.paper_title!r}: no DatasetPaperNode found")
-    #         continue
-    #     dp_ids = set(dp.datasets)
-    #     web_ids = website_ids_by_paper.get(pp.paper_title, set())
-
-    #     # 3. ProjectPage's DatasetWebsiteNodes are a subset of DatasetPaperNode's datasets
-    #     extra = web_ids - dp_ids
-    #     if extra:
-    #         errors.append(
-    #             f"[DatasetWebsite⊄DatasetPaper] {pp.paper_title!r}: DatasetWebsiteNodes contain dataset_ids not in DatasetPaperNode: {extra}"
-    #         )
-
     if errors:
         for e in errors:
             logger.warning("DB verify: %s", e)
