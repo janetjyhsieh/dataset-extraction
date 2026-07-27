@@ -237,7 +237,7 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
-    setup_logging(working_dir / "fg" / "logs")
+    setup_logging(working_dir / "logs")
 
     kwargs = {"model": args.model}
     if args.reasoning_effort is not None:
