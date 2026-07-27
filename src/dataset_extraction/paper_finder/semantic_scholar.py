@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import requests
 
-from dataset_extraction.downloader.utils import titles_match
+from dataset_extraction.paper_finder.utils import titles_match
 
 logger = logging.getLogger(__name__)
 
