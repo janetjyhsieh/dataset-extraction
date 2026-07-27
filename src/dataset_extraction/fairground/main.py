@@ -17,10 +17,10 @@ from dataset_extraction.error import LLMExtractionError
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.fairground.metadata.extractor import extract_metadata
-from dataset_extraction.fairground.metadata.metadata import MetadataExtractionResult
-from dataset_extraction.fairground.webpage.extractor import extract_webpage
-from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResult
+from dataset_extraction.metadata.pdf.extractor import extract_metadata
+from dataset_extraction.metadata.pdf.pdf import PdfExtractionResult
+from dataset_extraction.metadata.webpage.extractor import extract_webpage
+from dataset_extraction.metadata.webpage.webpage import WebsiteExtractionResult
 
 from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
@@ -38,7 +38,7 @@ from dataset_extraction.fairground import dataset_usage_table, dataset_table
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
 def save_dataset_paper(
-    result: MetadataExtractionResult,
+    result: PdfExtractionResult,
     canonical_title: str,
     dataset_ids: List[str],
     dataset_paper_db: DatasetPaperNodes
@@ -52,7 +52,7 @@ def save_dataset_paper(
     return dp
 
 def save_metadata(
-    result: MetadataExtractionResult, 
+    result: PdfExtractionResult, 
     canonical_title: str,
     metadata_db: MetadataNodes,
 ) -> List[str]:

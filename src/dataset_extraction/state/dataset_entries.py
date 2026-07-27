@@ -2,8 +2,8 @@ import uuid
 
 from pydantic import model_validator
 
-from dataset_extraction.fairground.metadata.metadata import DatasetMetadata
-from dataset_extraction.fairground.webpage.webpage import DatasetWebsiteInfo
+from dataset_extraction.metadata.pdf.pdf import DatasetMetadata
+from dataset_extraction.metadata.webpage.webpage import DatasetWebsiteInfo
 
 
 _DATASET_NS = uuid.UUID("b4e9a3c1-5d7f-4e2b-8a6c-3f1d9e0b2a4c")
