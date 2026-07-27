@@ -7,24 +7,30 @@ from pathlib import Path
 
 import openreview
 
-from dataset_extraction.corpus.corpus import CorpusSource, SourcePaper
-from dataset_extraction.corpus.utils import keywords_in_string
+from dataset_extraction.literature.source import LiteratureSource, SourcePaper
+from dataset_extraction.literature.utils import keywords_in_string
 
-logger = logging.getLogger("dataset_extraction.corpus.openreview")
+logger = logging.getLogger("dataset_extraction.literature.openreview")
 
 
-class OpenReviewSource(CorpusSource):
+class OpenReviewSource(LiteratureSource):
     def __init__(self, working_dir: Path, index_path: Path, client):
         super().__init__(working_dir, index_path)
         self.client = client
 
-    def get_papers(self, venue: str, keywords: list[str] | None = None) -> list[SourcePaper]:
+    def get_papers(self, venue: str, year: int | None = None, keywords: list[str] | None = None) -> list[SourcePaper]:
         notes = self.client.get_all_notes(content={"venueid": venue})
         new_papers = []
         for note in notes:
             title = note.content.get("title", {})
             if isinstance(title, dict):
                 title = title.get("value", "")
+
+            authors = note.content.get("authors", [])
+            if isinstance(authors, dict):
+                authors = authors.get("value", [])
+            if not isinstance(authors, list):
+                authors = []
 
             if keywords:
                 raw = note.content.get("keywords", [])
@@ -35,7 +41,8 @@ class OpenReviewSource(CorpusSource):
             if note.id in self.paper_ids:
                 continue
 
-            sp = SourcePaper(paper_id=note.id, title=title, authors=[], venue=venue)
+            pdf_url = f"{self.client.baseurl}/pdf?id={note.id}"
+            sp = SourcePaper(paper_id=note.id, title=title, authors=authors, venue=venue, year=year, pdf_url=pdf_url)
             self.papers.append(sp)
             self.paper_ids.add(note.id)
             new_papers.append(sp)

@@ -4,10 +4,10 @@ import json
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 
-from dataset_extraction.corpus.utils import download_pdf
+from dataset_extraction.literature.utils import download_pdf
 
 
-logger = logging.getLogger("dataset_extraction.corpus.corpus")
+logger = logging.getLogger("dataset_extraction.literature.source")
 
 class SourcePaper(BaseModel):
     paper_id: str
@@ -18,7 +18,7 @@ class SourcePaper(BaseModel):
     venue: str | None = None
     year: int | None = None
 
-class CorpusSource(ABC):
+class LiteratureSource(ABC):
     def __init__(self, working_dir, index_path):
         self.working_dir = working_dir
         self.index_path = index_path

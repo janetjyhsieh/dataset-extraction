@@ -4,10 +4,10 @@ import logging
 from pathlib import Path
 import openpyxl
 
-from dataset_extraction.corpus.corpus import CorpusSource, SourcePaper
-from dataset_extraction.corpus.utils import keywords_in_string
+from dataset_extraction.literature.source import LiteratureSource, SourcePaper
+from dataset_extraction.literature.utils import keywords_in_string
 
-logger = logging.getLogger("dataset_extraction.corpus.xlsx")
+logger = logging.getLogger("dataset_extraction.literature.xlsx")
 
 _ANNOTATIONS_PATH = Path(__file__).parents[4] / "gdrive" / "annotations.xlsx"
 _SHEET_NAME = "2. Papers"
@@ -18,7 +18,7 @@ _HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; dataset-extraction-bot/
 def _is_formula_error(value: str | None) -> bool:
     return not value or value.startswith("#") or value == "NA"
 
-class XslxSource(CorpusSource):
+class XslxSource(LiteratureSource):
     def __init__(self, working_dir, index_path, xsls_path):
         super().__init__(working_dir, index_path)
         self.xsls_path = xsls_path

@@ -8,17 +8,17 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-from dataset_extraction.corpus.corpus import CorpusSource, SourcePaper
-from dataset_extraction.corpus.utils import keywords_in_string
+from dataset_extraction.literature.source import LiteratureSource, SourcePaper
+from dataset_extraction.literature.utils import keywords_in_string
 
-logger = logging.getLogger("dataset_extraction.corpus.cvf")
+logger = logging.getLogger("dataset_extraction.literature.cvf")
 
 CVF_BASE = "https://openaccess.thecvf.com"
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; dataset-extraction-bot/1.0)"}
 
 
-class CvfSource(CorpusSource):
+class CvfSource(LiteratureSource):
     def __init__(self, working_dir: Path, index_path: Path):
         super().__init__(working_dir, index_path)
 
