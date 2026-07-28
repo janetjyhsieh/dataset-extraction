@@ -25,7 +25,7 @@ class DatasetMetadata(BaseModel):
     evidence: Evidence
 
 
-class MetadataExtractionResult(BaseModel):
+class PdfExtractionResult(BaseModel):
     paper_title: str = Field(description="Full paper title.")
     first_author_name: str = Field(description="Last, First — use the first name appearing in the author list.")
     project_page: str | None = Field(description="URL to the project web page as reported in the paper; prefer the official project/landing page if several links are given. null if no public release URL is reported.")

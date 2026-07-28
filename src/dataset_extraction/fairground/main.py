@@ -17,10 +17,10 @@ from dataset_extraction.error import LLMExtractionError
 from dataset_extraction.clients.claude import ClaudeClient
 from dataset_extraction.clients.foundry import FoundryClient
 from dataset_extraction.clients.openai import OpenAIClient
-from dataset_extraction.fairground.metadata.extractor import extract_metadata
-from dataset_extraction.fairground.metadata.metadata import MetadataExtractionResult
-from dataset_extraction.fairground.webpage.extractor import extract_webpage
-from dataset_extraction.fairground.webpage.webpage import WebsiteExtractionResult
+from dataset_extraction.metadata.pdf.extractor import extract_metadata
+from dataset_extraction.metadata.pdf.pdf import PdfExtractionResult
+from dataset_extraction.metadata.webpage.extractor import extract_webpage
+from dataset_extraction.metadata.webpage.webpage import WebsiteExtractionResult
 
 from dataset_extraction.usage.process import enqueue_used_datasets
 from dataset_extraction.usage.extractor import extract_and_save_usages
@@ -38,7 +38,7 @@ from dataset_extraction.fairground import dataset_usage_table, dataset_table
 logger = logging.getLogger("dataset_extraction.fairground.process")
 
 def save_dataset_paper(
-    result: MetadataExtractionResult,
+    result: PdfExtractionResult,
     canonical_title: str,
     dataset_ids: List[str],
     dataset_paper_db: DatasetPaperNodes
@@ -52,7 +52,7 @@ def save_dataset_paper(
     return dp
 
 def save_metadata(
-    result: MetadataExtractionResult, 
+    result: PdfExtractionResult, 
     canonical_title: str,
     metadata_db: MetadataNodes,
 ) -> List[str]:
@@ -193,26 +193,6 @@ def verify_databases(
         if dp.project_page and not dp.link_processed:
             errors.append(f"[DatasetPaper.link_processed] {dp.title!r}: has project_page but link_processed is False")
 
-    # # Build paper_title → set of dataset_ids from DatasetWebsiteNodes
-    # website_ids_by_paper: dict[str, set[str]] = {}
-    # for dw in dataset_website_db.all():
-    #     website_ids_by_paper.setdefault(dw.paper_title, set()).add(dw.dataset_id)
-
-    # for pp in project_page_db.all():
-    #     dp = dataset_paper_db.get(pp.paper_title)
-    #     if dp is None:
-    #         errors.append(f"[ProjectPage→DatasetPaper] {pp.paper_title!r}: no DatasetPaperNode found")
-    #         continue
-    #     dp_ids = set(dp.datasets)
-    #     web_ids = website_ids_by_paper.get(pp.paper_title, set())
-
-    #     # 3. ProjectPage's DatasetWebsiteNodes are a subset of DatasetPaperNode's datasets
-    #     extra = web_ids - dp_ids
-    #     if extra:
-    #         errors.append(
-    #             f"[DatasetWebsite⊄DatasetPaper] {pp.paper_title!r}: DatasetWebsiteNodes contain dataset_ids not in DatasetPaperNode: {extra}"
-    #         )
-
     if errors:
         for e in errors:
             logger.warning("DB verify: %s", e)
@@ -257,7 +237,7 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
-    setup_logging(working_dir / "fg" / "logs")
+    setup_logging(working_dir / "logs")
 
     kwargs = {"model": args.model}
     if args.reasoning_effort is not None:

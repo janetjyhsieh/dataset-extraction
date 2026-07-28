@@ -7,10 +7,10 @@ from pathlib import Path
 
 import requests
 
-from dataset_extraction.downloader.arxiv import ArxivClient
-from dataset_extraction.downloader.semantic_scholar import SemanticScholarClient
-from dataset_extraction.downloader.utils import titles_match
-from dataset_extraction.downloader.venues import pdf_from_venue, venue_source
+from dataset_extraction.paper_finder.arxiv import ArxivClient
+from dataset_extraction.paper_finder.semantic_scholar import SemanticScholarClient
+from dataset_extraction.paper_finder.utils import titles_match
+from dataset_extraction.paper_finder.venues import pdf_from_venue, venue_source
 from dataset_extraction.state.paper_entries import PaperInfo, PdfDownloadSource
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ Usage:
 
 import argparse
 
-from dataset_extraction.downloader.paper_finder import (
+from dataset_extraction.paper_finder.finder_downloader import (
     _get_s2_paper,
     _pdf_from_external_ids,
     _pdf_from_venue,

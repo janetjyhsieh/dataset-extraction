@@ -4,7 +4,7 @@ import re
 from enum import Enum
 
 from pydantic import BaseModel
-from dataset_extraction.fairground.webpage.webpage import WebsiteStatus
+from dataset_extraction.metadata.webpage.webpage import WebsiteStatus
 
 
 def canonicalize_title(title: str) -> str:

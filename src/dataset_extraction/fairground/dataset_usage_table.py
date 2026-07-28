@@ -1,6 +1,7 @@
 """Build a dataframe of datasets usages.
 
 Reads:
+  working_dir/databases/usages.json             – UsageNodes (via load_state)
   working_dir/fg/databases/usage_map.json       – mapper results (keyed by usage doc_id)
   working_dir/fg/databases/metadata_nodes.json  – MetadataNodes
 
@@ -14,7 +15,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 from pathlib import Path
 
@@ -43,11 +43,9 @@ def _combine_lists(series):
     return list(dict.fromkeys(combined))  # deduplicate, preserve order
 
 def run(working_dir: Path):
-    usages_path = working_dir / "state/usages.json"
-    with open(usages_path, "r") as f:
-        usages = json.load(f)
-    usages_df = pd.DataFrame.from_dict(usages["usages"], orient='index')
-    usages_df = pd.json_normalize(usages["usages"].values())
+    state = load_state(working_dir)
+    usages = [u.model_dump(mode="json") for u in state.usage_nodes.all()]
+    usages_df = pd.json_normalize(usages)
 
     usages_df["dataset_full_identifier"] = usages_df.apply(_dataset_full_name, axis=1)
     dataset_table_df = usages_df.rename(columns={
@@ -77,7 +75,7 @@ def main() -> None:
     args = parser.parse_args()
 
     working_dir = Path(args.working_dir)
-    setup_logging(working_dir / "fg" / "logs")
+    setup_logging(working_dir / "logs")
     run(working_dir)
 
 
