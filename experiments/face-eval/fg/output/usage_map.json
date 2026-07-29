@@ -1,0 +1,765 @@
+{
+  "1": {
+    "choice": "BRIAR Government Collections 1 (BGC1) and 2 (BGC2) (BRIAR Dataset)",
+    "confidence": 0.76,
+    "reasoning": "\u201cBRIAR Research Set 3 (BRS 3)\u201d is described in the downstream context as the training set used for long-range, low-resolution face recognition/feature fusion, which aligns with the main BRIAR dataset collected and curated from BGC1/BGC2 and partitioned into research vs. test sets. The provided source description discusses BRIAR\u2019s overall research/test partitioning but does not define separate numbering beyond that, making BGC1/BGC2 the best match.",
+    "dataset_id": "ace9e526-8f9f-596b-be68-c4c853d3b667"
+  },
+  "2": {
+    "choice": "WebFace4M",
+    "confidence": 0.96,
+    "reasoning": "The downstream paper explicitly refers to training results on the \u201cWebFace 4M\u201d dataset as a randomly sampled subset used for training an aggregation function, and this matches the introduced WebFace4M as a smaller sampled portion (\u224810% data) from the WebFace42M/WebFace260M family for scaling comparisons.",
+    "dataset_id": "c003c7fb-b111-5a4f-a17f-b80e91dc547c"
+  },
+  "3": {
+    "choice": "NONE",
+    "confidence": 0.92,
+    "reasoning": "The downstream paper cites \u201cBTS 3.1\u201d specifically for face verification under BTS face-included treatment protocols. The provided introduced datasets (BRIAR BGC1/BGC2 and their BRIAR test partitions) are different in scope and do not mention BTS 3.1, so no match can be made from the given candidate list.",
+    "dataset_id": null
+  },
+  "4": {
+    "choice": "NONE",
+    "confidence": 0.92,
+    "reasoning": "\u201cBTS 3.1\u201d refers to a specific face verification benchmark (BTS v3.1) with TAR evaluated at multiple FAR thresholds under a face-included control protocol. The provided introduced datasets (BRIAR Dataset with BGC1/BGC2 and its BRIAR Test Set partitions) are a different full-motion video biometric dataset and do not match this BTS 3.1 evaluation context.",
+    "dataset_id": null
+  },
+  "5": null,
+  "6": null,
+  "7": {
+    "choice": "CASIA-WebFace",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes using CASIA-WebFace as a large-scale real-world face dataset for training and for splitting images into similarity-based groups for face recognition performance analysis, which matches the introduced CASIA-WebFace dataset\u2019s purpose and construction. No other candidate dataset fits this description.",
+    "dataset_id": "9b828c1d-ac2e-51d0-874d-88e69a556d94"
+  },
+  "8": null,
+  "9": null,
+  "10": {
+    "choice": "AgeDB",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper mentions AgeDB-30 for evaluating face verification, specifically 1:1 age-invariant face verification performance. This directly corresponds to the introduced AgeDB dataset, which is designed for benchmarking age-invariant face verification and includes age-labeled in-the-wild face images.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "11": null,
+  "12": {
+    "choice": "Cross-Age LFW (CALFW)",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes using CALFW as a benchmark for age-variation face verification under the same/different protocol, which aligns directly with Cross-Age LFW\u2019s purpose and construction as an LFW extension with cross-age intra-class variation.",
+    "dataset_id": "76da8bc2-49e9-525b-9801-4d55c978dc72"
+  },
+  "13": {
+    "choice": "WebFace260M",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper describes using a pretrained FR model trained on WebFace4M and separately sampling \u201c1-shot data\u201d from \u201cWebFace-4m,\u201d which aligns with the uncleared/noisy initial million-scale WebFace training collection introduced alongside CAST. Among the provided candidates, only WebFace260M is the initial noisy source prior to the CAST cleaning to WebFace42M and is therefore the most likely dataset being referenced by the downstream \u201cWebFace260M/WebFace-4m\u201d naming mismatch.",
+    "dataset_id": "fb5d7889-8fdc-545c-b3d2-2c3dc859f28a"
+  },
+  "14": {
+    "choice": "VGGFace2",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper describes using VGGFace2 as a large-scale face training dataset for synthetic face recognition, which aligns directly with the introduced VGGFace2 dataset and its purpose for face identification/verification under varied pose and age.",
+    "dataset_id": "b24a8d46-55fc-5ea8-807c-ab6c79490729"
+  },
+  "15": {
+    "choice": "Flickr-Faces-HQ (FFHQ)",
+    "confidence": 0.96,
+    "reasoning": "The downstream paper\u2019s description matches FFHQ as an unlabeled, high-resolution (1024\u00d71024) face dataset used to pre-train a generative DDPM model for synthetic face generation, which aligns with the introduced Flickr-Faces-HQ dataset.",
+    "dataset_id": "2f76c1ef-82a9-5033-8b90-e0f835ea271b"
+  },
+  "16": null,
+  "17": {
+    "choice": "DigiFace-1M",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly discusses using a dataset named \u201cDigiFace-1M\u201d for face recognition benchmarking and for generating 1-shot inquiry images, which aligns directly with the introduced dataset\u2019s purpose (synthetic face recognition) and identity/ground-truth rendering pipeline.",
+    "dataset_id": "419baf6c-7f3f-55af-b4e1-8c8c6fe76731"
+  },
+  "18": {
+    "choice": "VoxCeleb2",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper repeatedly refers to \u201cthe public VoxCeleb2 dataset,\u201d including for face latent space learning and extracting evaluation clips from the VoxCeleb2 test split. This directly matches the introduced VoxCeleb2 dataset description as a large-scale audio-visual talking-face corpus built from unconstrained video sources.",
+    "dataset_id": "3ee041c4-ffac-5190-981a-63c19a70fa08"
+  },
+  "19": null,
+  "20": null,
+  "21": {
+    "choice": "VoxCeleb2",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper explicitly cites \u201cvoxceleb2 (Chung et al., 2018)\u201d as a large-scale lip-reading/audio-visual dataset for training, which aligns directly with the VoxCeleb2 dataset introduced in the candidate list.",
+    "dataset_id": "3ee041c4-ffac-5190-981a-63c19a70fa08"
+  },
+  "22": {
+    "choice": "CELEBA-HQ",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper explicitly states they train on the \u201cCelebA-HQ\u201d dataset at 1024\u00d71024 resolution, which matches the released CELEBA-HQ dataset of 30,000 curated face images. The intermediate processing dataset is not presented as a separate released dataset and would not be referred to simply as \u201cCelebA-HQ\u201d for training.",
+    "dataset_id": "e2773a36-509c-504a-9980-94160db37249"
+  },
+  "23": {
+    "choice": "FaceForensics++",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper describes sampling 1,000 videos from FaceForensics++ and then extracting frames for processing/evaluation, which matches the original FaceForensics++ construction (1,000 pristine videos and corresponding forgery frame data). The benchmark variant would emphasize an automated hidden-test evaluation protocol rather than just the 1,000-video content used for frame sampling.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "24": {
+    "choice": "Flickr-Faces-HQ (FFHQ)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper says it trains on \u201cFFHQ (Karras et al., 2019)\u201d for synthetic face generation, which matches the StyleGAN/StyleGAN2 introduction of Flickr-Faces-HQ as an unlabeled, high-resolution face dataset used for GAN training.",
+    "dataset_id": "2f76c1ef-82a9-5033-8b90-e0f835ea271b"
+  },
+  "25": {
+    "choice": "CASIA-WebFace",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly says it trains ID3 on \u201cCASIA-WebFace (Yi et al., 2014)\u201d for face recognition, which directly corresponds to the introduced CASIA-WebFace dataset description as a large-scale internet-collected face dataset used for training and evaluation (e.g., LFW).",
+    "dataset_id": "9b828c1d-ac2e-51d0-874d-88e69a556d94"
+  },
+  "26": null,
+  "27": null,
+  "28": null,
+  "29": {
+    "choice": "AgeDB",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper describes AgeDB as an evaluation benchmark for face verification with age variation, aligning directly with the introduced AgeDB dataset\u2019s purpose (age-invariant face verification and age-annotated face images with accurate labels). The cited properties of manual in-the-wild collection and accurate-to-the-year age labels match the introduced dataset description.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "30": {
+    "choice": "Cross-Age LFW (CALFW)",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper explicitly says it uses CALFW as part of the evaluation benchmark for cross-age face verification under an LFW-style same/different protocol. This directly matches the introduced dataset Cross-Age LFW (CALFW).",
+    "dataset_id": "76da8bc2-49e9-525b-9801-4d55c978dc72"
+  },
+  "31": {
+    "choice": "FFHQ-Ref",
+    "confidence": 0.86,
+    "reasoning": "The downstream paper describes fine-tuning on the FFHQ-Ref training split and benchmarking on FFHQ-Ref-Moderate and FFHQ-Ref-Severe test splits, which all come from the same underlying reference-based dataset. Therefore the referenced \u201cFFHQ-Ref\u201d corresponds to the full FFHQ-Ref dataset introduced in the cited paper.",
+    "dataset_id": "885ab20e-2987-5428-869f-cb1d4d43f115"
+  },
+  "32": {
+    "choice": "Flickr-Faces-HQ (FFHQ)",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper uses \u201cFFHQ\u201d as a training and evaluation dataset for face restoration/FID, referencing a standard set of 70k FFHQ images\u2014this matches the Flickr-Faces-HQ dataset introduced for generative modeling of high-quality human face images.",
+    "dataset_id": "2f76c1ef-82a9-5033-8b90-e0f835ea271b"
+  },
+  "33": null,
+  "34": {
+    "choice": "CelebA-Test (synthetic subset: 3,000 CelebA-HQ images from its testing partition)",
+    "confidence": 0.86,
+    "reasoning": "The downstream paper describes CelebA-Test as a blind face restoration evaluation set of 3,000 LQ/HQ pairs derived from CelebA\u2019s testing partition, which matches the introduced CelebA-Test synthetic subset of 3,000 test images.",
+    "dataset_id": "beda2005-6b5c-50dd-9c98-a52e84594257"
+  },
+  "35": {
+    "choice": "CELEBA-HQ",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper says CelebA-Test samples 3,000 LQ/HQ pairs from CelebA-HQ, aligning with CELEBA-HQ being the high-quality 1024\u00d71024 face image set derived from CelebA used as the parent for generating degraded (LQ) and ground-truth (HQ) pairs.",
+    "dataset_id": "e2773a36-509c-504a-9980-94160db37249"
+  },
+  "36": {
+    "choice": "FaceForensics++",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper references the FF++ (Faceforensics++) dataset as a primary training/evaluation resource described as the \u201cwidely recognized FF++ high-quality (HQ) dataset,\u201d which aligns with the original FaceForensics++ dataset rather than only the separate automated benchmark protocol.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "37": {
+    "choice": "FakeAVCeleb (v1.2 referenced as FakeAVCeleb v1.2)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly discusses using FakeAVCeleb as an unseen evaluation set for face forgery detection with categories like Faceswap, FSGAN, and Wav2Lip, and mentions audio-video pairing with an audio-related category excluded. This aligns directly with the FakeAVCeleb multimodal audio-video deepfake dataset description (v1.2).",
+    "dataset_id": "902a72d4-1135-58a7-b50e-f0770406bfb7"
+  },
+  "38": {
+    "choice": "Korean DeepFake Detection Dataset (KoDF)",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper\u2019s acronym \u201cKoDF\u201d directly aligns with the introduced dataset named Korean DeepFake Detection Dataset (KoDF). Its description as an unseen evaluation set for face forgery/deepfake detection across different manipulation sources is consistent with KoDF\u2019s purpose of improving real-world generalization under distribution shifts.",
+    "dataset_id": "a0b10e9a-2ec4-52c3-a575-b563bf89a813"
+  },
+  "39": {
+    "choice": "VoxCeleb2",
+    "confidence": 0.92,
+    "reasoning": "The downstream paper describes using VoxCeleb2 as a collection of paired images and video sequences at 256\u00d7256 for face reconstruction under in-the-wild conditions, which aligns with VoxCeleb2\u2019s curated videos with face tracks suitable for visual reconstruction/evaluation.",
+    "dataset_id": "3ee041c4-ffac-5190-981a-63c19a70fa08"
+  },
+  "40": null,
+  "41": {
+    "choice": "NONE",
+    "confidence": 0.95,
+    "reasoning": "\u201cImages with Diverse Shadows\u201d is described as 100 images with manually created external shadows and corresponding ground-truth targets, but none of the provided candidate datasets match this exact evaluation setup (the listed ones are foreign-syn/foreign-real, facial-syn, wild, and the training sets). The closest concept\u2014foreign-shadow removal evaluation\u2014does not specify \u201cdiverse external shadows\u201d with 100 manually created images and ground truths in the candidates.",
+    "dataset_id": null
+  },
+  "42": null,
+  "43": {
+    "choice": "FaceForensics++",
+    "confidence": 0.78,
+    "reasoning": "The downstream paper describes training on the FaceForensics++ dataset (FF++), including HQ/quality variants, for cross-dataset deepfake detection. This aligns with the core FaceForensics++ dataset (per-frame forgery masks/labels from four manipulation types under realistic compression), rather than specifically the separate automated hidden-test benchmark protocol.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "44": null,
+  "45": {
+    "choice": "NONE",
+    "confidence": 0.12,
+    "reasoning": "The downstream text only says it used an unseen test dataset called \"DeepFake Detection\" for cross-dataset evaluation, but the candidate list provided only includes DFDC. This alias could refer to many other deepfake detection datasets, and the excerpt does not provide enough linkage to DFDC specifically.",
+    "dataset_id": null
+  },
+  "46": {
+    "choice": "The DeepFake Detection Challenge (DFDC) Dataset",
+    "confidence": 0.72,
+    "reasoning": "\u201cDFDC Preview\u201d is a commonly used reference/preview split of the original DFDC dataset used for unseen-domain evaluation. Its description aligns with DFDC-P testing used for generalization metrics like frame-level AUC/EER.",
+    "dataset_id": "ff8bedbe-e006-5e4f-9765-f7a016717fe4"
+  },
+  "47": {
+    "choice": "WildDeepfake",
+    "confidence": 0.99,
+    "reasoning": "The downstream description matches WildDeepfake\u2019s purpose as a real-world, unseen-domain benchmark for deepfake detection generalization. The task setting (deepfake detection with image/sequence style evaluations and visualizations) aligns with the dataset\u2019s construction and evaluation protocol.",
+    "dataset_id": "338c1713-ace8-5049-9dc2-e4bbbfedaf53"
+  },
+  "48": {
+    "choice": "DiffusionFace",
+    "confidence": 0.86,
+    "reasoning": "The downstream description says DiffSwap is used to evaluate generalization to diffusion-based face swapping and includes analyses on that dataset. DiffusionFace explicitly contains a diffusion-based face swapping forgery category generated by multiple diffusion models, matching the stated task/domain and method focus.",
+    "dataset_id": "ae085fd6-578f-5f7d-b98d-fa84222d4f04"
+  },
+  "49": {
+    "choice": "FaceForensics++",
+    "confidence": 0.9,
+    "reasoning": "\u201cFaceForensics++\u201d is the exact dataset introducing the four-face-forgery types (Face2Face, FaceSwap, DeepFakes, NeuralTextures) with realistic compression, matching the downstream discussion of low-quality (c40) training and deepfake detection results (DF(L) and F2F(L)). The benchmark variant is more specifically a separate automated protocol with additional obscuring operations and a hidden test set, which the downstream reference does not emphasize.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "50": {
+    "choice": "AMBIGUOUS",
+    "confidence": 0.4,
+    "reasoning": "The downstream paper explicitly refers to \u201cMS1MV2\u201d with 5.8M images and 85K identities, but none of the introduced dataset options are named MS1MV2. Given only MS1MV0 (noisy) and MS1MV3 (cleaned) plus IBUG-500K (separately constructed), the provided information does not uniquely map MS1MV2 to one of the remaining options.",
+    "dataset_id": null
+  },
+  "51": {
+    "choice": "Glint360K",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper uses Glint360K for large-scale training with 17.1M images and 360K identities, which directly corresponds to the introduced Glint360K training dataset described as a cleaned/merged identity-labeled face dataset.",
+    "dataset_id": "c1eb724b-b4f8-577e-bb26-c4de5aea65f0"
+  },
+  "52": {
+    "choice": "WebFace42M",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly says it \u201cemploy WebFace42M as training set\u201d for MFR-Ongoing experiments, which aligns directly with WebFace42M being the cleaned, curated million-scale training dataset derived from WebFace260M via CAST.",
+    "dataset_id": "a873163e-6461-5c58-b698-23eb47ffe0b5"
+  },
+  "53": null,
+  "54": {
+    "choice": "AgeDB",
+    "confidence": 0.86,
+    "reasoning": "\u201cAgeDB-30\u201d is a common benchmark subset/variant of the AgeDB face dataset used for age-invariant face verification evaluation. The downstream context mentioning face recognition verification aligns with the introduced AgeDB dataset\u2019s use for age-in-the-wild face verification benchmarks.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "55": null,
+  "56": null,
+  "57": {
+    "choice": "Cross-Age LFW (CALFW)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper\u2019s \u201cCross-Age LFW (CALFW)\u201d is described as a face recognition verification benchmark, which directly matches the introduced CALFW dataset: a cross-age extension of LFW with the same verification protocol as LFW view 2 and evaluation via standard same/different testing.",
+    "dataset_id": "76da8bc2-49e9-525b-9801-4d55c978dc72"
+  },
+  "58": null,
+  "59": null,
+  "60": {
+    "choice": "Masked Face Recognition Challenge (InsightFace track test sets: Masked Test Set, Children Test Set, Multi-racial Test Set)",
+    "confidence": 0.83,
+    "reasoning": "The downstream describes evaluating a WebFace42M model on the \u201cMFR-Ongoing\u201d benchmark including Mask, Children, and MR-All subsets via the challenge protocol, which aligns directly with the InsightFace-track masked face recognition test sets (masked/children/multi-racial) evaluated through an online server.",
+    "dataset_id": "972183b4-30ec-5db2-8d55-86e385bf829a"
+  },
+  "61": {
+    "choice": "NONE",
+    "confidence": 0.93,
+    "reasoning": "MS1Mv2 refers to the well-known MS-Celeb-1M v2 training set used for large-scale face recognition metric learning/backbone training. However, the only introduced dataset candidates here are MS-Celeb-1M (benchmark) and MS-Celeb-1M training dataset (v1), and neither explicitly corresponds to the v2 version mentioned in the downstream paper.",
+    "dataset_id": null
+  },
+  "62": null,
+  "63": {
+    "choice": "CelebA",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly mentions \u201cpretrained on the public CelebA dataset\u201d and uses it for face recognition/privacy and reconstruction evaluation, which aligns directly with the CelebA dataset description (face images with 40 attribute labels). LFWA is also a face attribute dataset but is not cited as the public pretraining source here.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "64": {
+    "choice": "AgeDB",
+    "confidence": 0.97,
+    "reasoning": "The downstream description matches the standard use of AgeDB as an in-the-wild age/face benchmark for face recognition-related evaluation and reconstruction/privacy attacks, and it mentions preprocessing in an appendix, which aligns with how AgeDB is commonly used. The cited introduction also specifically describes AgeDB as the first manually collected in-the-wild age database with accurate labels, fitting the benchmark context.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "65": null,
+  "66": {
+    "choice": "Cross-Age LFW (CALFW)",
+    "confidence": 0.98,
+    "reasoning": "The downstream description matches CALFW\u2019s purpose as a face verification benchmark used to evaluate recognition performance, and privacy robustness under reconstruction attacks. The provided candidate dataset is exactly the cross-age LFW (CALFW) benchmark with the standard same/different verification protocol.",
+    "dataset_id": "76da8bc2-49e9-525b-9801-4d55c978dc72"
+  },
+  "67": null,
+  "68": null,
+  "69": null,
+  "70": {
+    "choice": "Attribute-Identity Disentanglement Triplet (AIDT) dataset",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper\u2019s description of using AIDT for face swapping and training an encoder to disentangle identity from other factors matches the introduced AIDT dataset\u2019s purpose and construction. The specific mention of triplets for both images and videos (1M image triplets and 0.6M video triplets) aligns with the AIDT dataset released for video face swapping.",
+    "dataset_id": "3c39fcd7-2a67-56dd-bf77-ac0995efd8c3"
+  },
+  "71": {
+    "choice": "NONE",
+    "confidence": 0.1,
+    "reasoning": "The introduced candidate dataset (AIDT) is an attribute\u2013identity disentanglement dataset for video face swapping, but the downstream description specifically refers to a benchmark called VidSwapBench with 200 source images and 200 target videos and evaluation metrics like FVD and identity retrieval, which does not match AIDT\u2019s described triplet/pair construction.",
+    "dataset_id": null
+  },
+  "72": {
+    "choice": "Flickr-Faces-HQ (FFHQ)",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper evaluates face swapping and explicitly refers to the \u201cstandard FFHQ dataset,\u201d reporting generative metrics like FID on faces. This directly matches the introduced Flickr-Faces-HQ (FFHQ) high-resolution, unlabeled face image dataset used for FID and evaluation.",
+    "dataset_id": "2f76c1ef-82a9-5033-8b90-e0f835ea271b"
+  },
+  "73": null,
+  "74": {
+    "choice": "Flickr-Faces-HQ (FFHQ)",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper cites \u201cFFHQ\u201d in the context of a dataset of ~100K high-quality human face images used to condition generative models. Among the introduced candidates, only Flickr-Faces-HQ (FFHQ) matches as the unlabeled, high-resolution face dataset used for generative training/evaluation.",
+    "dataset_id": "2f76c1ef-82a9-5033-8b90-e0f835ea271b"
+  },
+  "75": {
+    "choice": "CELEBA-HQ",
+    "confidence": 0.74,
+    "reasoning": "The downstream paper\u2019s \u201cCELEB-A-HQ\u201d is clearly a variant spelling/alias of \u201cCelebA-HQ,\u201d which is the high-resolution CelebA-derived face dataset used for GAN-style face generation training alongside FFHQ. Between the two candidates, only the released dataset \u201cCELEBA-HQ\u201d corresponds to the dataset being used directly for training.",
+    "dataset_id": "e2773a36-509c-504a-9980-94160db37249"
+  },
+  "76": {
+    "choice": "Animal Faces-HQ (AFHQ)",
+    "confidence": 0.9,
+    "reasoning": "\u201cAFHQ-Cat\u201d is a cat-specific subset/domain of the Animal Faces-HQ (AFHQ) dataset, which includes distinct domains such as cat, dog, and wildlife and is used for multi-domain image-to-image translation.",
+    "dataset_id": "3aece1f7-0895-5710-b88b-a3fb73ffa12a"
+  },
+  "77": {
+    "choice": "FairFace",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper\u2019s description matches the introduced FairFace dataset: a large-scale in-the-wild face attribute dataset (~108k\u2013110k images) labeled for race and gender (and age), used for measuring attributes and attack success on FairFace target images.",
+    "dataset_id": "6c4c73e9-8bdc-5e74-85b1-1e93e4eb7c32"
+  },
+  "78": {
+    "choice": "VGGFace2",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper uses VGGFace2 as the base face-image collection and to derive race-attributed subsets and PCA matrices from annotated data, which directly matches the introduced VGGFace2 dataset\u2019s role as a large-scale face dataset with ethnicity/attributes and auxiliary annotations.",
+    "dataset_id": "b24a8d46-55fc-5ea8-807c-ab6c79490729"
+  },
+  "79": null,
+  "80": null,
+  "81": {
+    "choice": "AgeDB",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper uses \u201cAgeDB\u201d as an evaluation/target dataset for adversarial face attacks and discusses the dataset\u2019s age-specific evaluation settings. This aligns directly with the introduced AgeDB dataset: an in-the-wild age-labeled face database intended for age-related face verification/estimation benchmarks.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "82": {
+    "choice": "CELEBA-HQ",
+    "confidence": 0.72,
+    "reasoning": "The downstream paper describes using the CelebA-HQ dataset to sample 500 subjects with paired facial images, which aligns with the released curated CELEBA-HQ high-resolution dataset derived from CelebA for GAN training/evaluation. The mention is consistent with the final 30,000-image CELEBA-HQ release rather than the intermediate processing pipeline.",
+    "dataset_id": "e2773a36-509c-504a-9980-94160db37249"
+  },
+  "83": null,
+  "84": null,
+  "85": null,
+  "86": null,
+  "87": null,
+  "88": null,
+  "89": {
+    "choice": "FaceForensics++",
+    "confidence": 0.78,
+    "reasoning": "The downstream paper says it uses \u201cFF++_c23\u201d (including DFD) and trains on the c23 subset with real facial samples from FF++_c23, which refers to the underlying FaceForensics++ dataset variants/subsets. It does not describe use of the separate automated benchmark with a hidden test set, so the correct introduced dataset is the base FaceForensics++ collection.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "90": {
+    "choice": "DeepfakeBench",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper\u2019s description matches the benchmark suite \u201cDeepfakeBench\u201d itself, emphasizing unified preprocessing/experimental settings and generalization assessment on that benchmark for traditional deepfakes, rather than a specific underlying dataset like FF++, DFDC, or CelebDF.",
+    "dataset_id": "0fe9b15c-20ef-5c62-868b-335b393d3e73"
+  },
+  "91": {
+    "choice": "Celeb-DF",
+    "confidence": 0.9,
+    "reasoning": "\u201cCelebDF\u201d is an alias for the introduced dataset \u201cCeleb-DF\u201d. The downstream context (frame-level DeepFake detection evaluated via AUC) matches Celeb-DF\u2019s real-vs-DeepFake classification setup.",
+    "dataset_id": "718d776d-0921-5b89-9c1b-668818a2c977"
+  },
+  "92": {
+    "choice": "Celeb-DF",
+    "confidence": 0.96,
+    "reasoning": "The downstream reference to \u201cCelebDF\u201d for face deepfake detection evaluation aligns directly with the introduced Celeb-DF dataset: real vs generated DeepFake videos from celebrity interviews, intended for detection/forensics at the frame level. The modality (video frames) and task (DeepFake detection) match the construction and evaluation described for Celeb-DF.",
+    "dataset_id": "718d776d-0921-5b89-9c1b-668818a2c977"
+  },
+  "93": null,
+  "94": {
+    "choice": "The DeepFake Detection Challenge (DFDC) Dataset",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly mentions \u201cDeepfake Detection Challenge (DFDC)\u201d and uses it for video-level face deepfake detection evaluation, matching the introduced DFDC dataset\u2019s purpose and benchmark setting.",
+    "dataset_id": "7ff77278-cdae-5b4c-8b1e-cf6f818df31c"
+  },
+  "95": null,
+  "96": {
+    "choice": "DiFF (Diffusion Facial Forgery dataset)",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper\u2019s \u201cDiffusion Facial Forgery (DiFF)\u201d and its reported subsets (T2I, I2I, FS, FE) and frame-level generalization align directly with the introduced DiFF diffusion facial forgery dataset\u2019s four generation conditions and evaluation protocol.",
+    "dataset_id": "b07b5cb3-9370-5505-a5c6-3cc136eba1c8"
+  },
+  "97": {
+    "choice": "DF40 (DF40 dataset)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper\u2019s description of evaluating face deepfake detection across multiple face-swapping techniques and referencing DF40 tables/sections matches the introduced DF40 benchmark built from 40 face forgery methods with evaluation protocols and AUC metrics.",
+    "dataset_id": "cb362b78-7f3e-5bc8-ab12-cfe0ec790d82"
+  },
+  "98": null,
+  "99": {
+    "choice": "H3DS",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper describes H3DS as a benchmark for high-resolution 3D full-head reconstruction with single-view and multi-view settings, reporting surface error and qualitative results on H3DS subjects. This directly matches the introduced H3DS dataset description (high-resolution 3D full-head scans with images, poses, and masks) used for reconstruction evaluation.",
+    "dataset_id": "122ca4b8-1009-589f-9d99-47ca384970cc"
+  },
+  "100": null,
+  "101": {
+    "choice": "CELEBA-HQ",
+    "confidence": 0.86,
+    "reasoning": "The downstream paper uses \u201cCelebA-HQ\u201d as an image dataset for qualitative evaluation on in-the-wild face data, which aligns with the released CELEBA-HQ dataset (30k curated high-resolution CelebA-derived face images). The provided context does not indicate the intermediate processing set, only the dataset used for evaluation results.",
+    "dataset_id": "e2773a36-509c-504a-9980-94160db37249"
+  },
+  "102": {
+    "choice": "Emo-CFG",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes Emo-CFG as a 2.1M-sample, instruction-based, emotion-centric video dataset used for training and evaluation of emotion reasoning tasks. This directly matches the introduced Emo-CFG dataset description and construction (instruction/QA/captions with emotion-centric labels and rationales for video).",
+    "dataset_id": "53ce7f14-73d3-57be-91ca-4bb147529892"
+  },
+  "103": {
+    "choice": "CelebV-HQ (High-Quality Celebrity Video Dataset)",
+    "confidence": 0.96,
+    "reasoning": "The downstream paper uses CelebV-HQ for appearance and action attribute perception from high-quality celebrity video clips, aligning directly with the introduced CelebV-HQ dataset\u2019s labeled facial attributes covering appearance (time-invariant) and action (time-variant). The description of using train/test splits for multi-label QA tasks also matches the dataset being designed with rich attribute supervision.",
+    "dataset_id": "d285fd0c-6c74-506a-96f7-ff9075d30a4b"
+  },
+  "104": {
+    "choice": "CelebV-Text",
+    "confidence": 0.99,
+    "reasoning": "The downstream description explicitly matches CelebV-Text\u2019s purpose and annotations: caption-style supervision/evaluation for appearance, action, and expression/emotion, plus light-related attributes, all for facial text-to-video tasks.",
+    "dataset_id": "48184c29-d96c-5a26-8481-b0bd6d6e12b7"
+  },
+  "105": null,
+  "106": {
+    "choice": "The Ryerson Audio-Visual Database of Emotional Speech and Song (RAVDESS)",
+    "confidence": 0.86,
+    "reasoning": "The downstream paper uses \u201cRAVDESS\u201d for fine-grained emotion recognition and also references \u201cREAVDESS\u201d for evaluation on the same task, which aligns with the well-known Ryerson audio-visual emotional speech and song dataset (audio-visual, video-only, audio-only; categorical emotions with intensity). The MEAD pairing is also consistent with affective/emotion recognition benchmarking using RAVDESS.",
+    "dataset_id": "d810b6f5-5f0f-5fae-b4d6-99a7b5279c0a"
+  },
+  "107": {
+    "choice": "CMU Multimodal Opinion Sentiment and Emotion Intensity (CMU-MOSEI)",
+    "confidence": 0.97,
+    "reasoning": "The downstream reference \u201cCMU-MOSEI\u201d aligns directly with the introduced dataset CMU Multimodal Opinion Sentiment and Emotion Intensity, which is used for sentiment analysis tasks such as single-label sentiment recognition.",
+    "dataset_id": "eb350b87-f2c9-5e96-88a4-43db84ae3547"
+  },
+  "108": {
+    "choice": "Multimodal Opinion-level Sentiment Intensity dataset (MOSI)",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper\u2019s description of \u201cMOSI\u201d used for single-label sentiment recognition alongside MOSEI matches the MOSI dataset\u2019s role as an opinion-level multimodal sentiment benchmark with sentiment intensity/subjectivity annotations.",
+    "dataset_id": "81caebcc-9cc3-5536-907b-9dc6ea5e291e"
+  },
+  "109": {
+    "choice": "CH-SIMS",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly refers to \u201cCH-SIMS v1\u201d with training/evaluation sources labeled \u201cCHSIMSv1,\u201d which directly matches the introduced \u201cCH-SIMS\u201d dataset and its fine-grained sentiment recognition task. No other introduced dataset in the list fits this exact versioning and purpose.",
+    "dataset_id": "7e6f34e1-c0b1-57b4-853b-b95f7c77f775"
+  },
+  "110": {
+    "choice": "MAFW",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper uses \u201cMAFW\u201d for single-label and multi-label emotion recognition and facial expression recognition in-the-wild, which aligns directly with the introduced MAFW dataset for dynamic FER/emotion analysis with single- and multi-label emotion categories.",
+    "dataset_id": "55ea83f1-61bb-5d33-a469-475190aac6d9"
+  },
+  "111": {
+    "choice": "DFEW single-labeled subset (derived from DFEW)",
+    "confidence": 0.86,
+    "reasoning": "The downstream paper describes DFEW being used for single-label emotion recognition and reports benchmarks for ER under discrete emotion categories, which aligns with the provided single-labeled subset derived from the original DFEW annotations.",
+    "dataset_id": "1a8bb528-47cb-5b48-9222-1695160707fa"
+  },
+  "112": {
+    "choice": "MER 2023 (extended version of CHEAVD)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper refers to \u201cMER 2023\u201d as an expression-analysis dataset for single-label emotion recognition, and MER 2023 is explicitly the benchmark dataset introduced for multimodal emotion recognition (with human-centered video clips and emotion/discrete label information). The provided description aligns with the introduced MER 2023 dataset referenced by that alias.",
+    "dataset_id": "92c257e1-289c-5743-ab96-0191f3575242"
+  },
+  "113": null,
+  "114": {
+    "choice": "CASME II",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper uses \u201cCASME II\u201d specifically for micro-expression detection/classification evaluation and reports 246 examples, which aligns with the introduced CASME II spontaneous micro-expression dataset and its labeled onset/offset samples. The described modality (facial videos with AU/emotion labels) matches the introduced dataset description.",
+    "dataset_id": "8fbc201d-9fb4-508e-975e-22e3e819e858"
+  },
+  "115": null,
+  "116": {
+    "choice": "Aff-Wild Database",
+    "confidence": 0.75,
+    "reasoning": "The downstream paper uses \u201cAff-Wild\u201d/\u201cAffWild2\u201d specifically for evaluating the AU task and indicates \u201cAffWild2\u201d is the training source, which aligns with evaluation being based on the original Aff-Wild dataset split. Among the introduced options, only the Aff-Wild Database directly supports this evaluation context (while the \u201cChallenge\u201d split is a specific training/test release for valence/arousal estimation).",
+    "dataset_id": "e6894219-8bee-5727-b167-e8bedecc9100"
+  },
+  "117": {
+    "choice": "Emotional RelAtionship of inTeractiOn (ERATO)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper describes PERR as a conversation reasoning task and explicitly relates it to Emo-CFG and an underlying PERR task. The introduced dataset ERATO is defined as supporting the Pairwise Emotional Relationship Recognition (PERR) task with character interaction clips and multimodal (visual/audio/text) annotations, which matches the PERR reference.",
+    "dataset_id": "1b2b86ee-0db9-5cee-a57d-fae2eca8e258"
+  },
+  "118": {
+    "choice": "Multimodal EmotionLines Dataset (MELD)",
+    "confidence": 0.94,
+    "reasoning": "The downstream paper\u2019s \u201cMELD\u201d is used in conversation reasoning and is explicitly described in the referenced introduction as a multimodal, multi-party conversational emotion dataset. This matches the dataset\u2019s construction from TV dialogue and its annotated emotion/sentiment labels used alongside other conversation reasoning datasets (e.g., PERR).",
+    "dataset_id": "535f5cd4-ac5b-5004-8515-3a359f990e62"
+  },
+  "119": null,
+  "120": {
+    "choice": "Context-Aware Emotion Recognition (CAER)",
+    "confidence": 0.74,
+    "reasoning": "The downstream reference uses \u201cCAER\u201d as a source dataset within a larger emotion-centric annotation construction, aligning with the original CAER benchmark\u2019s context-aware emotion recognition setting (video clips). There\u2019s no indication it is referring specifically to the static image subset (CAER-S).",
+    "dataset_id": "2ae41553-b6e2-52d5-91e9-e3c686f80091"
+  },
+  "121": null,
+  "122": {
+    "choice": "FERV39k",
+    "confidence": 0.96,
+    "reasoning": "The downstream reference \u201cFERV39K\u201d is described as a dataset contributing to fine-grained emotion-centric annotations and open attribute perception/caption-rationale tasks, which aligns with the introduced FERV39k video facial expression dataset containing short clips, scene context, and emotion labels. The acronym casing matches the dataset name closely.",
+    "dataset_id": "758d219e-a57d-5a0c-a950-b5d0a1391fca"
+  },
+  "123": null,
+  "124": {
+    "choice": "VLF",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly uses the \u201cVisual Language Forensic (VLF) dataset\u201d for fine-grained face forensics with detection, localization of falsified facial regions (partial synthesis), and attribution of the source generator/method, which matches the described VLF synthesis face dataset and its label triad.",
+    "dataset_id": "ca231901-d555-5f45-8d9d-167a3cc41d02"
+  },
+  "125": {
+    "choice": "CelebAMask-HQ",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes using CelebAMask-HQ as a face semantic parsing dataset with landmarks/part annotations for multiple facial attributes (nose, brows, hair, ears, eyes, teeth) and sourcing identities from its facial datasets. This matches the introduced CelebAMask-HQ dataset description as a high-resolution face semantic label dataset with detailed annotated facial components.",
+    "dataset_id": "027036c5-f6b2-5e8c-bd0f-84dcc80b4c2a"
+  },
+  "126": null,
+  "127": {
+    "choice": "FaceForensics++",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper references the \u2018original\u2019 subset of FaceForensics++, describing it as pristine source images used for training and evaluation in forensic experiments. That corresponds to the core FaceForensics++ dataset (with subsets and ground-truth masks/labels), not the separate hidden-test automated benchmark protocol.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "128": null,
+  "129": {
+    "choice": "FaceForensics++",
+    "confidence": 0.87,
+    "reasoning": "The downstream paper states that FaceForensics++ (FF++) contains 1K real face videos and that pre-training data is sourced from real faces in FF++, which aligns with the base FaceForensics++ dataset of 1,000 pristine videos. The benchmark variant is mainly an evaluation protocol with an added hidden test set, which is not the focus of the described \u201creal-face sourcing\u201d.",
+    "dataset_id": "cd7da7e5-0bfa-5290-a23e-de32853be45f"
+  },
+  "130": {
+    "choice": "Celeb-DF",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper\u2019s description matches Celeb-DF v2 (CDF2) exactly, stating it contains 590 real and 5,639 fake videos and is used as a DeepFake detection task with sequential dataset-incremental protocols.",
+    "dataset_id": "718d776d-0921-5b89-9c1b-668818a2c977"
+  },
+  "131": {
+    "choice": "The DeepFake Detection Challenge (DFDC) Dataset",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly refers to the Deepfake Detection Challenge (DFDC) and specifies using the Preview version (DFDC-P), which corresponds directly to the introduced DFDC dataset described for deepfake/face-swap detection and Kaggle benchmarking.",
+    "dataset_id": "7ff77278-cdae-5b4c-8b1e-cf6f818df31c"
+  },
+  "132": null,
+  "133": {
+    "choice": "DF40 (DF40 dataset)",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper explicitly describes DF40 as a large-scale dataset with 40 types of forgery methods and uses it to select specific manipulation methods (e.g., BlendFace, MCNet, StyleGAN3). This matches the introduced DF40 benchmark, which is constructed from 40 distinct face forgery techniques and is used for deepfake detection tasks by manipulation type/category.",
+    "dataset_id": "cb362b78-7f3e-5bc8-ab12-cfe0ec790d82"
+  },
+  "134": {
+    "choice": "CASIA-WebFace",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly uses 'CASIA-WebFace' as the original training dataset for face recognition. This matches the introduced dataset [CASIA-WebFace] described as a large-scale \u201cin-the-wild\u201d face dataset for standardized face recognition evaluation.",
+    "dataset_id": "9b828c1d-ac2e-51d0-874d-88e69a556d94"
+  },
+  "135": {
+    "choice": "WebFace42M (Cleaned)",
+    "confidence": 0.72,
+    "reasoning": "The downstream description says the subset is called WebFace160K with ~10K identities and 160K images derived from \u201cWebFace4M\u201d, and that it is used as the main original training dataset for face recognition training. Among the introduced datasets, WebFace42M (Cleaned) is the closest large-scale WebFace-based cleaned training subset; WebFace260M is too large/noisy and the referenced identities/images scale (~10K/160K) aligns better with a cleaned subset variant rather than the full 260M collection.",
+    "dataset_id": "e6bd9bb7-5421-566d-bcf2-2978482b39bb"
+  },
+  "136": {
+    "choice": "WebFace42M (Cleaned)",
+    "confidence": 0.62,
+    "reasoning": "The downstream paper describes starting from WebFace160K and incrementally adding data from \u201cWebFace4M,\u201d which matches the setting of using a larger cleaned real-data face recognition training set derived from the WebFace collection. Among the provided options, WebFace42M (Cleaned) is the only WebFace-derived, cleaned multi-million identity dataset suitable for such incremental real-data augmentation comparisons.",
+    "dataset_id": "e6bd9bb7-5421-566d-bcf2-2978482b39bb"
+  },
+  "137": null,
+  "138": null,
+  "139": null,
+  "140": {
+    "choice": "Cross-Age LFW (CALFW)",
+    "confidence": 0.96,
+    "reasoning": "The downstream paper explicitly discusses verification accuracy on CALFW for evaluating face recognition models under a same/different protocol. This matches the introduced dataset \u201cCross-Age LFW (CALFW)\u201d, which is designed to extend LFW for cross-age face verification benchmarks.",
+    "dataset_id": "76da8bc2-49e9-525b-9801-4d55c978dc72"
+  },
+  "141": {
+    "choice": "AgeDB",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper evaluates a face recognition benchmark reporting verification accuracy on \u201cAgeDB,\u201d which matches the introduced AgeDB dataset focused on age-invariant face verification using in-the-wild images with accurate-to-the-year age labels.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "142": null,
+  "143": null,
+  "144": {
+    "choice": "TinyFace",
+    "confidence": 0.98,
+    "reasoning": "The downstream description matches the introduced TinyFace dataset\u2019s purpose: evaluating challenging low-resolution face recognition under unconstrained, native LR conditions and reporting rank-1 accuracy with additional rank-1/rank-5 analyses.",
+    "dataset_id": "68030c4d-5e6f-562d-870a-0724892bdfc3"
+  },
+  "145": {
+    "choice": "DigiFace-1M",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper explicitly refers to the \u201coriginal DigiFace1M (3D graphics)\u201d as the synthetic training dataset and evaluates face recognition models on benchmark verification suites, which directly matches the described construction and task of the DigiFace-1M dataset.",
+    "dataset_id": "419baf6c-7f3f-55af-b4e1-8c8c6fe76731"
+  },
+  "146": null,
+  "147": null,
+  "148": null,
+  "149": {
+    "choice": "DCFace (synthetic labeled face dataset generated by the DCFace Dual Condition Generator)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper calls the dataset \u201cDCFace\u201d and describes it as a diffusion-based synthetic baseline for face recognition, including synthetic and mixed real+synthetic training. This matches the introduced DCFace synthetic labeled face dataset generated by the DCFace Dual Condition Generator for FR training.",
+    "dataset_id": "2ab997d2-da40-5852-b675-b9524fcd5b6f"
+  },
+  "150": null,
+  "151": {
+    "choice": "CASIA-WebFace",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly trains on the \u201cCASIA-WebFace\u201d dataset for face image compression with ArcFace-based identity preservation, and the introduced dataset description matches CASIA-WebFace as a large-scale web-collected face dataset with identity labels for face recognition training.",
+    "dataset_id": "9b828c1d-ac2e-51d0-874d-88e69a556d94"
+  },
+  "152": null,
+  "153": null,
+  "154": {
+    "choice": "AgeDB",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper uses \u201cAgeDB\u201d as a face recognition evaluation dataset with same-identity verification pairs for age-related data after reconstruction/compression. This aligns closely with the introduced AgeDB dataset\u2019s purpose as an in-the-wild, age-annotated face dataset for age-invariant face verification/face recognition benchmarks.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "155": null,
+  "156": {
+    "choice": "Cross-Age LFW (CALFW)",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper refers to CALFW as a face verification robustness benchmark with the same LFW-like positive/negative paired evaluation protocol. That matches the introduced Cross-Age LFW (CALFW) dataset, which extends LFW by creating cross-age verification pairs under the LFW view-2 (10-fold) protocol.",
+    "dataset_id": "76da8bc2-49e9-525b-9801-4d55c978dc72"
+  },
+  "157": {
+    "choice": "Flickr-Faces-HQ (FFHQ)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper\u2019s captions state that sample face images come from the \u201cFFHQ\u201d dataset, which directly corresponds to the Flickr-Faces-HQ (FFHQ) human face image dataset introduced for GAN training/evaluation.",
+    "dataset_id": "2f76c1ef-82a9-5033-8b90-e0f835ea271b"
+  },
+  "158": null,
+  "159": {
+    "choice": "MS COCO (Microsoft Common Objects in COntext)",
+    "confidence": 0.9,
+    "reasoning": "The downstream reference \u201cCOCO\u201d is used to evaluate performance over selected COCO classes in image classification-style experiments, which aligns with the core MS COCO dataset contents/categories. There is no mention of the specific train/val/test split protocol, so the split-specific option is less supported.",
+    "dataset_id": "c81e6e03-f485-56d5-afa6-86c65f05c032"
+  },
+  "160": {
+    "choice": "CelebA",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper\u2019s description matches CelebA\u2019s face-attribute annotation setting, using binary hair/hat attributes and evaluating on a selected subset of CelebA attribute labels. LFWA is another dataset but the cited task and attribute subset are specifically consistent with CelebA\u2019s 40 binary attributes.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "161": {
+    "choice": "CELEBA-HQ",
+    "confidence": 0.74,
+    "reasoning": "The downstream paper describes using a subset of CelebA-HQ and an \u201cin-the-wild\u201d CelebA-HQ test set for age progression evaluation, which aligns with the released curated CELEBA-HQ dataset used for GAN training/evaluation rather than the intermediate processing step.",
+    "dataset_id": "e2773a36-509c-504a-9980-94160db37249"
+  },
+  "162": null,
+  "163": {
+    "choice": "AgeDB",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper explicitly refers to the \u201cstandard aging datasets\u201d including AgeDB-30, which is an established subset/benchmark derived from the original AgeDB in-the-wild age database. Since the source list only contains AgeDB (not AgeDB-30 separately), the reference should map to AgeDB.",
+    "dataset_id": "25047a40-7b10-5a50-baeb-43873a22ec10"
+  },
+  "164": null,
+  "165": null,
+  "166": {
+    "choice": "VintageFace",
+    "confidence": 0.86,
+    "reasoning": "The downstream paper describes \u201cconstruct VintageFace\u201d as a 300-image benchmark of real old face photos with varying degradation levels and evaluates restoration quality across simple/medium/hard subsets, which matches the VintageFace dataset description. The degradation categorization method appendix provides implementation details but the downstream reference is clearly to the main VintageFace benchmark rather than the separate appendix entry.",
+    "dataset_id": "d8182309-9449-5755-a098-9b8796d19438"
+  },
+  "167": {
+    "choice": "WebPhoto-Test (407 faces extracted from 188 low-quality internet photos)",
+    "confidence": 0.99,
+    "reasoning": "The downstream description matches the introduced dataset\u2019s construction: a real-world blind face restoration benchmark using low-quality/degraded old photos crawled from the web, with faces extracted for evaluation and reported FID/NIQE results.",
+    "dataset_id": "db9dfdaa-3093-56a4-b633-890cb770547a"
+  },
+  "168": {
+    "choice": "CelebChild-Test (180 child faces of celebrities collected from the Internet)",
+    "confidence": 0.78,
+    "reasoning": "The downstream description says the dataset is used for blind face restoration on images of old face photos and reports FID/NIQE; among the candidates, only CelebChild-Test is explicitly a public evaluation set of (celebrity) child/old photos from the Internet for restoration/quality metrics. The other options (CelebA-Test, LFW-Test, WebPhoto-Test) do not specifically match the \u201cCelebA-Child\u201d alias targeting old/child celebrity images.",
+    "dataset_id": "e7a5e97a-7e32-5557-a6af-01540d8fd21c"
+  },
+  "169": {
+    "choice": "ETH-XGaze",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly uses the dataset labeled \u201cETH-XGaze\u201d as a source-domain training set for cross-domain gaze estimation, aligning directly with the introduced ETH-XGaze dataset description (a gaze estimation dataset for monocular gaze under extreme poses). No other candidate dataset in the list matches this exact role and name.",
+    "dataset_id": "29054305-c914-5e42-8e9f-5a6e65870793"
+  },
+  "170": {
+    "choice": "Gaze360",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly uses \u201cGaze360\u201d as a source-domain training dataset for cross-domain and in-domain 3D gaze estimation, matching the introduced dataset described as large-scale 3D gaze data in unconstrained images and short video sequences.",
+    "dataset_id": "bba6c652-5ecc-5533-b2ae-b6b6192c3d49"
+  },
+  "171": null,
+  "172": null,
+  "173": {
+    "choice": "RigAnyFace facial mesh dataset (RAF)",
+    "confidence": 0.9,
+    "reasoning": "The downstream description matches the RAF paper\u2019s dataset: a subset of heads meticulously rigged by professional artists, used as 3D ground truth for deformation/auto-rigging with 3D and 2D supervision, and a held-out subset (e.g., 24 rigged heads) for quantitative testing.",
+    "dataset_id": "1cadf58c-3ed4-594a-99cb-25ada40f137a"
+  },
+  "174": {
+    "choice": "RigAnyFace facial mesh dataset (RAF)",
+    "confidence": 0.9,
+    "reasoning": "The downstream description matches RAF\u2019s stated setup: using neutral, unlabeled unrigged head meshes for stage-one training with only 2D supervision, and using a small set of diverse unrigged heads as an OOD-style qualitative test set when 3D rigs are unavailable.",
+    "dataset_id": "1cadf58c-3ed4-594a-99cb-25ada40f137a"
+  },
+  "175": {
+    "choice": "LS 4K\u00d74K and TG 8K\u00d78K physically-based face scan datasets (combined training sources)",
+    "confidence": 0.74,
+    "reasoning": "The downstream paper describes ICT FaceKit as an in-the-wild source of facial meshes used for auto-rigging/generalization. This most plausibly corresponds to the Light Stage/Triplegangers physically-based 3D scan sources (with dense correspondences and mesh/geometry outputs) used to build the hybrid 3DMM training pipeline, rather than IdNet/ExpNet/TexNet specifically.",
+    "dataset_id": "588f62aa-0263-5999-8dde-d2f9231e3e81"
+  },
+  "176": {
+    "choice": "Objaverse 1.0 (OBJAVERSE)",
+    "confidence": 0.74,
+    "reasoning": "The downstream paper refers to using Objaverse assets as in-the-wild humanoid and non-humanoid facial meshes for qualitative evaluation. That corresponds to the broad, general-purpose set of 3D objects in Objaverse 1.0, not the narrower LVIS-categorized subset.",
+    "dataset_id": "c679fca3-7ad2-5558-a3e9-d6c13985a816"
+  },
+  "177": null,
+  "178": {
+    "choice": "VIPBench",
+    "confidence": 0.84,
+    "reasoning": "The downstream paper describes \u201cVIPBench\u201d as an identity-aware benchmark with three components (DF A for facial attributes, DID for identity discrimination training, and VIPEval for evaluation), matching the top-level VIPBench dataset introduction rather than a single sub-dataset.",
+    "dataset_id": "f135fc09-0d76-5be4-a951-4f5ee171d7f8"
+  },
+  "179": {
+    "choice": "LAION-FACE",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper\u2019s \u201cLAION-Face\u201d is used to collect real facial images (about 30,000 high-resolution face images) and contribute to identity-pair data/benchmarks, matching the curated face-filtered LAION-FACE subset. LAION-RANDOM is a sampling ablation intended to include many non-face images, which contradicts the \u201creal facial images\u201d usage.",
+    "dataset_id": "e8ff8124-147f-519c-929c-a1fa683e1697"
+  },
+  "180": {
+    "choice": "CrossFaceID",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper states it uses \u201cCrossFaceID\u201d as an open-source facial image source to construct identity/image-name pairs and evaluation identities, which aligns with the main CrossFaceID dataset of text-image pairs for the same celebrity identity. There is no indication it specifically refers to the separate evaluation split \u201cCrossFaceID-test.\u201d",
+    "dataset_id": "5c670f80-4fda-5c57-82ea-da2dbfe673a6"
+  },
+  "181": {
+    "choice": "FaceID-6M",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes FaceID-6M as an open-source identity-labeled face image source used for constructing image-name/identity pairs and as part of VIPBench evaluation. This matches the introduced FaceID-6M dataset\u2019s purpose and construction (large-scale high-quality text-image pairs filtered to retain person-relevant content for identity conditioning).",
+    "dataset_id": "c68e8f94-f1ee-50db-b497-4b6c0772d27b"
+  },
+  "182": null,
+  "183": {
+    "choice": "DF40 (DF40 dataset)",
+    "confidence": 0.9,
+    "reasoning": "\u201cDF40\u201d directly matches the introduced benchmark dataset for face deepfake detection. The downstream description of using a CelebDF-related subset of DF40 for one-shot identity-aware deepfake evaluation aligns with DF40\u2019s role as a multi-forgery deepfake benchmark with provided splits/subsets for limited-diversity scenarios.",
+    "dataset_id": "cb362b78-7f3e-5bc8-ab12-cfe0ec790d82"
+  }
+}

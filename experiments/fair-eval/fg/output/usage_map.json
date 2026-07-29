@@ -1,0 +1,714 @@
+{
+  "1": null,
+  "2": null,
+  "3": null,
+  "4": {
+    "choice": "folktables ACS PUMS-derived prediction datasets (ACSIncome, ACSPublicCoverage, ACSMobility, ACSEmployment, ACSTravelTime)",
+    "confidence": 0.92,
+    "reasoning": "The downstream paper\u2019s description of ACSIncome as a pre-processed version of Adult and its use in fairness-focused tabular binary classification matches the folktables ACS PUMS-derived dataset family, where ACSIncome is specifically the binary income (> $50k-style threshold) task with an Adult-like fairness setup.",
+    "dataset_id": "ad10393e-e5dc-5319-b7de-806fd3576d9a"
+  },
+  "5": null,
+  "6": null,
+  "7": null,
+  "8": null,
+  "9": null,
+  "10": null,
+  "11": null,
+  "12": null,
+  "13": {
+    "choice": "Arrhythmia dataset (ECG recordings)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper uses \u201cArrhythmia\u201d as a binary classification task predicting the presence/absence of arrhythmia from patient ECG-derived features. This matches the introduced ECG-based arrhythmia dataset with cardiologist diagnosis labels for normal vs arrhythmia classes.",
+    "dataset_id": "da4ca754-50b5-511c-9b6f-e996f53d51db"
+  },
+  "14": null,
+  "15": null,
+  "16": null,
+  "17": null,
+  "18": null,
+  "19": null,
+  "20": null,
+  "21": null,
+  "22": null,
+  "23": null,
+  "24": null,
+  "25": null,
+  "26": null,
+  "27": null,
+  "28": null,
+  "29": null,
+  "30": null,
+  "31": null,
+  "32": null,
+  "33": null,
+  "34": null,
+  "35": null,
+  "36": null,
+  "37": {
+    "choice": "CelebA",
+    "confidence": 0.92,
+    "reasoning": "The downstream paper describes using the CelebA face attribute dataset with original train/test splits for facial attribute prediction. This aligns directly with the introduced CelebA dataset: CelebFaces-derived images annotated with 40 facial attributes, commonly used for attribute prediction benchmarks.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "38": null,
+  "39": {
+    "choice": "Celligner_data (applied to TCGA, TARGET, Treehouse, and CCLE) on Figshare",
+    "confidence": 0.78,
+    "reasoning": "The downstream description matches an integrated tumor vs cancer cell-line aligned gene expression resource intended for cross-dataset comparisons across many cancer types (TCGA and CCLE-like cell lines), consistent with the Celligner-aligned profiles produced from TCGA/TARGET/Treehouse tumors and DepMap/CCLE cell lines.",
+    "dataset_id": "d51bc40a-f227-51c4-a24a-9763b09cd784"
+  },
+  "40": null,
+  "41": null,
+  "42": null,
+  "43": null,
+  "44": null,
+  "45": null,
+  "46": {
+    "choice": "CelebA",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper\u2019s description aligns with CelebA being a celebrity face attribute dataset used for binary face attribute prediction (e.g., attractive) and fairness evaluation with gender as the protected attribute.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "47": null,
+  "48": null,
+  "49": null,
+  "50": null,
+  "51": null,
+  "52": null,
+  "53": null,
+  "54": null,
+  "55": null,
+  "56": null,
+  "57": null,
+  "58": null,
+  "59": null,
+  "60": null,
+  "61": null,
+  "62": null,
+  "63": null,
+  "64": null,
+  "65": null,
+  "66": null,
+  "67": null,
+  "68": null,
+  "69": null,
+  "70": null,
+  "71": null,
+  "72": null,
+  "73": null,
+  "74": {
+    "choice": "NONE",
+    "confidence": 0.82,
+    "reasoning": "\u201cWarriner et al. affect ratings\u201d refers to the earlier Warriner et al. affective norms (commonly the ANEW/valence-arousal-dominance ratings paper). The only introduced dataset candidate here is a different, newer \u201cNorms of valence, arousal, and dominance for 13,915 English lemmas,\u201d and the provided context does not confirm that this is the same Warriner et al. source.",
+    "dataset_id": null
+  },
+  "75": null,
+  "76": {
+    "choice": "extended Moral Foundations Dictionary (eMFD)",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes using an extended Moral Foundations Dictionary to derive morality scores from antonym pairs via moral foundation word ratings, which directly matches the eMFD\u2019s purpose of providing continuous moral foundation membership probabilities and derived moral scoring.",
+    "dataset_id": "c5333d00-0829-5d90-a024-161c307ea5dc"
+  },
+  "77": null,
+  "78": null,
+  "79": null,
+  "80": null,
+  "81": null,
+  "82": null,
+  "83": null,
+  "84": null,
+  "85": null,
+  "86": null,
+  "87": null,
+  "88": null,
+  "89": null,
+  "90": null,
+  "91": {
+    "choice": "Gym-MuJoCo tasks with D4RL datasets (Hopper, HalfCheetah, Walker2d)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper evaluates \u201cD4RL Mujoco locomotion-v2 tasks\u201d on HalfCheetah, Hopper, and Walker2d using the standard D4RL dataset variants (medium-expert, medium, medium-replay), which correspond to the Gym-MuJoCo continuous control datasets in D4RL.",
+    "dataset_id": "a7e31bea-2854-5d72-b52b-aee2d1590f9e"
+  },
+  "92": null,
+  "93": null,
+  "94": null,
+  "95": null,
+  "96": null,
+  "97": null,
+  "98": null,
+  "99": {
+    "choice": "AG\u2019s News corpus (subset for 4 classes; title + description fields; train/test split constructed by the authors)",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper describes \u201cAG News classification dataset (Zhang et al., 2015)\u201d with 4 classes corresponding to news topics and using only title/description-style fields for topic classification, matching the introduced AG\u2019s News 4-class subset constructed from AG\u2019s corpus.",
+    "dataset_id": "beea4486-a748-5793-92e2-12445041f7ac"
+  },
+  "100": {
+    "choice": "ISIC 2017 Challenge dataset (Skin Lesion Analysis Toward Melanoma Detection; Part 1\u20133)",
+    "confidence": 0.78,
+    "reasoning": "The downstream description specifies training on the 2017 ISIC challenge data (and separately the 2020 dataset) as the core dermoscopic training set, which aligns with the introduced ISIC 2017 Challenge dataset released in multiple parts for segmentation, feature detection, and classification.",
+    "dataset_id": "7b9e750c-e5f3-57dc-b222-ac19fe9ead3a"
+  },
+  "101": {
+    "choice": "SIIM-ISIC Melanoma Classification challenge dataset (2020-ds01)",
+    "confidence": 0.82,
+    "reasoning": "The downstream paper describes using ISIC challenge data (combining 2017 and 2020) for dermoscopic melanoma classification training, which aligns with the SIIM-ISIC Melanoma Classification challenge dataset\u2019s role as patient-centric dermoscopic melanoma data with melanoma/benign labels from clinical confirmation.",
+    "dataset_id": "527030ae-f865-51f9-bcd8-386fb0b61be2"
+  },
+  "102": {
+    "choice": "NONE",
+    "confidence": 0.2,
+    "reasoning": "The downstream explicitly references \u201c2018 challenge data,\u201d but the only provided introduced dataset is the \u201cISIC 2017 Challenge dataset.\u201d Since the year/task match cannot be established with the given candidates, a correct mapping isn\u2019t possible.",
+    "dataset_id": null
+  },
+  "103": null,
+  "104": null,
+  "105": null,
+  "106": null,
+  "107": null,
+  "108": null,
+  "109": null,
+  "110": null,
+  "111": null,
+  "112": null,
+  "113": null,
+  "114": null,
+  "115": {
+    "choice": "ImageNet Large Scale Visual Recognition Challenge (ILSVRC) 2010-2014 (classification, single-object localization, and object detection benchmark)",
+    "confidence": 0.88,
+    "reasoning": "The downstream \u201cImageNet (128\u00d7128)\u201d alias for large-scale image data used in GAN training and evaluation aligns with the standard ImageNet/ILSVRC benchmark dataset commonly downsampled to 128\u00d7128 for generative modeling metrics like FID and Inception Score.",
+    "dataset_id": "0dbf0b93-b59b-561a-872a-f05d93cefc47"
+  },
+  "116": {
+    "choice": "D4RL (Datasets for Deep Data-Driven Reinforcement Learning) benchmark suite",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper explicitly refers to \u201cwidely-used D4RL MuJoCo datasets\u201d (Fu et al., 2020) and then constructs expert/non-expert and mixed-quality splits from them. That description matches the overall D4RL benchmark suite, whose Gym-MuJoCo tasks (Hopper/HalfCheetah/Walker2d) are included as part of D4RL.",
+    "dataset_id": "68b1a8c6-2629-54f9-89d2-f8ef47035531"
+  },
+  "117": {
+    "choice": "Dexterous manipulation demonstrations (state-action trajectories for object relocation, in-hand manipulation, tool use, and door opening)",
+    "confidence": 0.88,
+    "reasoning": "\u201cAdroit human datasets\u201d in the context of Rajeswaran et al. (2017) refers to the human VR demonstration trajectories for Adroit dexterous manipulation tasks like Pen/Door/Hammer/Relocate. The introduced dataset matches this by providing state-action demonstration trajectories for exactly those dexterous manipulation domains and uses them for imitation-based learning.",
+    "dataset_id": "f6155630-0c30-5671-9f60-e150db1e5ecf"
+  },
+  "118": null,
+  "119": {
+    "choice": "LibriTTS",
+    "confidence": 0.62,
+    "reasoning": "The downstream paper\u2019s \u201cLibriTTS dataset (Zen et al., 2019)\u201d and evaluation references to LibriTTS (e.g., LibriTTS-all-960) match the general LibriTTS corpus derived from LibriSpeech, used for end-to-end text-to-speech training/evaluation. The context does not clearly restrict the citation to the specific LibriTTS standardized split subsets (train-clean-360/dev-*/test-*), so the broader LibriTTS dataset is the best fit.",
+    "dataset_id": "f2d647de-ae58-530a-8983-aa10d61dc4b5"
+  },
+  "120": null,
+  "121": null,
+  "122": null,
+  "123": null,
+  "124": null,
+  "125": null,
+  "126": null,
+  "127": null,
+  "128": null,
+  "129": null,
+  "130": {
+    "choice": "GLUE benchmark (General Language Understanding Evaluation)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper says it uses GLUE tasks (CoLA, MNLI, MRPC, QQP, SST) as evaluation benchmarks for ensemble classification after fine-tuning, which corresponds to the standard GLUE multi-task benchmark rather than the small diagnostic subset.",
+    "dataset_id": "ac78f625-d1ca-56eb-b9f4-de8e299c2cd4"
+  },
+  "131": {
+    "choice": "SuperGLUE (SuperGLUE benchmark)",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper describes using tasks from the GLUE and SuperGLUE benchmarks and specifically mentions BoolQ from SuperGLUE in experiments, which corresponds to the main SuperGLUE eight-task benchmark (not the separate diagnostic sets).",
+    "dataset_id": "8592aaa0-366e-59ac-ae5d-843b8ab40c86"
+  },
+  "132": null,
+  "133": {
+    "choice": "NONE",
+    "confidence": 0.05,
+    "reasoning": "The downstream description identifies CoLA as a binary grammatical acceptability classification task. None of the provided introduced datasets (e.g., MSRP paraphrase identification) correspond to CoLA\u2019s linguistic acceptability objective, so no match can be made from the candidate list.",
+    "dataset_id": null
+  },
+  "134": null,
+  "135": {
+    "choice": "Multi-Genre Natural Language Inference (MultiNLI) corpus (MultiNLI)",
+    "confidence": 0.76,
+    "reasoning": "The downstream reference describes a three-way natural language inference task over sentence pairs (entailment/contradiction/neutral), which matches the core NLI setup of MultiNLI. The \u201cMNLI\u201d label is commonly an alias for MultiNLI, so the cited dataset is most likely MultiNLI rather than SNLI.",
+    "dataset_id": "87b6eea4-fece-5987-a676-847c83189d0f"
+  },
+  "136": {
+    "choice": "NONE",
+    "confidence": 0.05,
+    "reasoning": "The downstream paper\u2019s description matches a paraphrase/seman\u00adtic equivalence sentence-pair task, but among the provided introduced dataset options only MSRP is available and MRPC is not explicitly among them. With no separate candidate for MRPC, the mapping to MSRP is uncertain.",
+    "dataset_id": null
+  },
+  "137": null,
+  "138": null,
+  "139": {
+    "choice": "Stanford Sentiment Treebank",
+    "confidence": 0.98,
+    "reasoning": "The downstream description matches standard SST usage: predicting positive vs. negative sentiment labels for sentences from the Stanford Sentiment Treebank, with training/evaluation using a subset of examples (e.g., 10k). No other introduced dataset aligns with this specific binary sentiment sentence-level task.",
+    "dataset_id": "48c07a52-6ed7-5399-af21-25c38f770e3d"
+  },
+  "140": null,
+  "141": null,
+  "142": null,
+  "143": null,
+  "144": null,
+  "145": null,
+  "146": null,
+  "147": null,
+  "148": null,
+  "149": null,
+  "150": null,
+  "151": null,
+  "152": null,
+  "153": null,
+  "154": null,
+  "155": {
+    "choice": "Twitter Higgs Boson Rumor Dataset (tweets and user social graph for lhc/cern/boson/higgs, 1\u20137 July 2012)",
+    "confidence": 0.9,
+    "reasoning": "The downstream description focuses on Twitter follower links and an application built from the \u201cHiggs Twitter dataset,\u201d which aligns with a Twitter dataset containing a derived follower-based social graph of Higgs-related users. The only candidate provided that matches this Higgs Twitter + social graph construction is the Twitter Higgs Boson Rumor Dataset (1\u20137 July 2012).",
+    "dataset_id": "fe45d643-fab9-5279-8606-c1d9dc689b8e"
+  },
+  "156": null,
+  "157": null,
+  "158": null,
+  "159": null,
+  "160": {
+    "choice": "CelebA",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper explicitly cites \u201cCelebFaces Attributes (CelebA)\u201d and uses it for face attribute prediction with defined protected groups, matching the described CelebA face-attribute dataset constructed from CelebFaces/CelebFaces dataset images. This aligns with CelebA being used for training/validation/testing in a 40-attribute face prediction benchmark.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "161": null,
+  "162": null,
+  "163": null,
+  "164": null,
+  "165": null,
+  "166": null,
+  "167": null,
+  "168": null,
+  "169": null,
+  "170": null,
+  "171": null,
+  "172": {
+    "choice": "NONE",
+    "confidence": 0.82,
+    "reasoning": "The downstream paper\u2019s \u201cMR\u201d is used as a text classification dataset for sentiment on movie reviews (e.g., embedding CNN for MR and SST). The only provided introduced datasets are a rating-inference scale dataset and a sentence-snippet polarity dataset, neither of which directly corresponds to a standard movie-review sentiment classification benchmark labeled \u201cMR\u201d.",
+    "dataset_id": null
+  },
+  "173": null,
+  "174": null,
+  "175": null,
+  "176": null,
+  "177": null,
+  "178": null,
+  "179": null,
+  "180": null,
+  "181": null,
+  "182": {
+    "choice": "Fashion-MNIST",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper describes using FashionMNIST as a 28\u00d728 grayscale fashion image dataset for CNN experiments, matching the Fashion-MNIST definition as a drop-in MNIST replacement with 10 fashion categories and the same format/split.",
+    "dataset_id": "2bd4c445-7961-57b7-b34a-76d74f949af1"
+  },
+  "183": null,
+  "184": null,
+  "185": null,
+  "186": null,
+  "187": {
+    "choice": "Bias in Bios dataset",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper describes Bios as using biographies to predict a person\u2019s occupation (text classification) and evaluates gender bias-related metrics such as balanced accuracy/prediction consistency. This matches the introduced Bias in Bios dataset built from online biographies with occupation classification and gender obtained from gendered cues in the text.",
+    "dataset_id": "a373b731-5c73-5752-9268-a5f0da51c851"
+  },
+  "188": null,
+  "189": null,
+  "190": null,
+  "191": null,
+  "192": null,
+  "193": null,
+  "194": null,
+  "195": null,
+  "196": null,
+  "197": {
+    "choice": "CelebA",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper\u2019s \u201cCelebFaces Attributes (CelebA)\u201d reference is an exact match for the CelebA dataset introduced, which contains celebrity face images annotated with 40 binary facial attributes (including smiling) suitable for fairness experiments with sex as a sensitive attribute.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "198": null,
+  "199": null,
+  "200": {
+    "choice": "CelebA",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly uses \u201cCelebA\u201d for two binary classification tasks in the reproduced fairness experiments, which aligns directly with the introduced CelebA dataset for face attribute prediction/recognition using the 40 labeled attributes.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "201": {
+    "choice": "Microsoft Common Objects in Context (MS COCO)",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper refers to 'MS-COCO' in the context of multi-label classification experiments, which aligns with the well-known Microsoft Common Objects in Context dataset consisting of everyday scenes with object category labels.",
+    "dataset_id": "46d5e2d0-466a-59c9-a822-b520403aeec3"
+  },
+  "202": {
+    "choice": "NONE",
+    "confidence": 0.05,
+    "reasoning": "The downstream paper references an \u201cimSitu\u201d dataset for multi-class image classification fairness experiments, but no introduced dataset in the provided list corresponds to imSitu-style situation recognition/classification. SituNet describes situation recognition with frame/semantic-role labels, which does not clearly match the referenced multi-class classification setup.",
+    "dataset_id": null
+  },
+  "203": {
+    "choice": "CIFAR-10 Skewed (CIFAR-10S)",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper\u2019s \u201cCIFAR-10S\u201d is used for fairness/bias experiments on multi-class classification, which matches the introduced CIFAR-10 Skewed (CIFAR-10S) benchmark designed for bias mitigation under a controlled spurious correlation (color vs grayscale). The dataset provides object-class labels for multi-class tasks alongside domain membership for bias evaluation.",
+    "dataset_id": "c0e8491c-cd25-5244-9ede-e43e53f00032"
+  },
+  "204": null,
+  "205": null,
+  "206": {
+    "choice": "intersectional_gpt2 (data + results for intersectional occupational bias probing of GPT-2)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper\u2019s evaluation uses GPT-2 prompt templates of the form \u201cThe [X][Y] works as a ...\u201d to probe occupational bias with gender intersected with protected classes, generating thousands of sentences and analyzing occupation distributions with logistic-regression-based intersectional effects. This directly matches the construction and purpose of the introduced intersectional_gpt2 dataset.",
+    "dataset_id": "fd1d7b83-9a22-5697-89a6-2b66d4990d11"
+  },
+  "207": {
+    "choice": "intersectional_gpt2 (data + results for intersectional occupational bias probing of GPT-2)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper\u2019s evaluation uses name-only prompts tied to first names sampled by country and aggregated to continent-level groups, probing latent occupational associations from GPT-2 generations. This directly corresponds to the intersectional_gpt2 dataset\u2019s name-based templates, large-scale GPT-2 completions, and occupation-token extraction for bias/association probing.",
+    "dataset_id": "fd1d7b83-9a22-5697-89a6-2b66d4990d11"
+  },
+  "208": null,
+  "209": null,
+  "210": {
+    "choice": "CelebA",
+    "confidence": 0.95,
+    "reasoning": "The downstream reference explicitly says it uses the \u201cCelebA dataset\u201d for binary attribute prediction and describes applying multiple attribute-prediction tasks (including attractiveness) while using sex as the sensitive attribute. This matches the introduced CelebA face attribute dataset with 40 annotated attributes.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "211": {
+    "choice": "Microsoft Common Objects in Context (MS COCO)",
+    "confidence": 0.97,
+    "reasoning": "The downstream reference to \u201cMicrosoft COCO\u201d aligns directly with the introduced MS COCO dataset. The use of COCO images for derived classification tasks (from images/captions) matches the vision dataset\u2019s everyday object domain and its associated caption annotations.",
+    "dataset_id": "46d5e2d0-466a-59c9-a822-b520403aeec3"
+  },
+  "212": {
+    "choice": "Cityscapes",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper explicitly describes Cityscapes as a semantic segmentation benchmark using Cityscapes\u2019 standard training/validation setup and an unbiased test set derived from the validation set, aligning with the introduced Cityscapes dataset\u2019s task (pixel-level semantic/instance labeling) and split structure.",
+    "dataset_id": "f15f1d1a-ef74-54bd-abb5-c0c45879af1a"
+  },
+  "213": null,
+  "214": null,
+  "215": null,
+  "216": null,
+  "217": null,
+  "218": {
+    "choice": "CelebA",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper uses a face-attribute dataset with target attributes like BlondHair and HeavyMakeup and a bias attribute Male, which matches the standard CelebA setup of 40 facial attribute labels. The introduced datasets list includes CelebA as the corresponding CelebA-based face attribute dataset.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "219": null,
+  "220": {
+    "choice": "Biased MNIST",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper describes a controlled biased digit image classification dataset with target-bias correlation settings and biased-label/unknown-bias-label evaluation, which matches the synthetic MNIST variant where background color correlates with the digit label via a strength parameter \u03c1.",
+    "dataset_id": "e73290cf-9d50-55ce-b883-2a71ae66e29f"
+  },
+  "221": {
+    "choice": "ImageNet Large Scale Visual Recognition Challenge (ILSVRC) 2010-2014 (classification, single-object localization, and object detection benchmark)",
+    "confidence": 0.78,
+    "reasoning": "The downstream paper\u2019s experiments are described as using an ImageNet setting for image classification with a 9-class subset, and the cited dataset is clearly the standard ImageNet benchmark used for such tasks. Among the provided options, the ILSVRC 2010\u20132014 ImageNet classification benchmark matches this usage best.",
+    "dataset_id": "0dbf0b93-b59b-561a-872a-f05d93cefc47"
+  },
+  "222": {
+    "choice": "IMAGENET-A",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper uses \"ImageNet-A\" specifically as an additional evaluation image classification test set of natural adversarial/bias-conflicting samples under distribution shift. That description matches the introduced IMAGENET-A dataset (natural adversarially filtered images that degrade ImageNet models).",
+    "dataset_id": "22d6edd6-166e-5a85-b676-0e37e520a66c"
+  },
+  "223": null,
+  "224": null,
+  "225": null,
+  "226": null,
+  "227": {
+    "choice": "eICU Collaborative Research Database (eICU-CRD) v2.0",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper\u2019s \u201ceICU dataset\u201d refers to ICU stay prediction using a multi-hospital deidentified ICU database with cohorts commonly drawn from eICU-CRD. The provided introduced dataset exactly matches this eICU critical care dataset description and provenance.",
+    "dataset_id": "ba96e198-5481-5756-ac48-223c5908ac7a"
+  },
+  "228": null,
+  "229": null,
+  "230": null,
+  "231": null,
+  "232": null,
+  "233": null,
+  "234": null,
+  "235": null,
+  "236": null,
+  "237": {
+    "choice": "CelebA",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper\u2019s described VFL setup uses face-attribute labels such as 'Smiling', 'Straight Hair', 'Wavy Hair', and 'Male', which correspond to the standard 40 binary attributes in CelebA. This matches the CelebA dataset\u2019s intended task of face attribute prediction/recognition in the wild.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "238": null,
+  "239": {
+    "choice": "folktables ACS PUMS-derived prediction datasets (ACSIncome, ACSPublicCoverage, ACSMobility, ACSEmployment, ACSTravelTime)",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper uses \u201cFolktables\u201d specifically as the sampling and preprocessing source to construct real-world ACS-based experimental data, which aligns directly with the suite of ACS PUMS-derived Folktables prediction datasets (ACSIncome, ACSPublicCoverage, etc.). The IPUMS Adult reconstruction dataset is based on CPS/IPUMS Adult rather than ACS PUMS, so it does not match the described context.",
+    "dataset_id": "ad10393e-e5dc-5319-b7de-806fd3576d9a"
+  },
+  "240": null,
+  "241": null,
+  "242": null,
+  "243": null,
+  "244": null,
+  "245": null,
+  "246": null,
+  "247": null,
+  "248": null,
+  "249": {
+    "choice": "CelebA",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly refers to the CelebA image dataset and uses it for binary face-attribute classification with 40 annotated attributes, matching the introduced CelebA dataset definition (40 face attributes from CelebFaces). It is also used to predict protected attributes such as MALE from learned representations, consistent with CelebA\u2019s attribute annotations.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "250": null,
+  "251": null,
+  "252": null,
+  "253": null,
+  "254": null,
+  "255": {
+    "choice": "IPUMS Adult (UCI Adult reconstruction; \u201cIPUMS Adult\u201d)",
+    "confidence": 0.84,
+    "reasoning": "The downstream paper describes the classic Adult income task with a binary cutoff at $50K and fairness evaluation using race and gender, using standard train/validation/test splits\u2014this aligns strongly with the UCI Adult setting. Among the introduced datasets, only the IPUMS Adult reconstruction directly corresponds to this \u201cAdult\u201d income classification framing (with an explicit >$50K threshold), whereas the folktables ACS tasks are a broader suite with different dataset names.",
+    "dataset_id": "38c480b6-fc52-5fb9-96fa-2a8a31c7211a"
+  },
+  "256": null,
+  "257": {
+    "choice": "CelebA",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper\u2019s description (\u201cpredicting attractiveness\u201d and \u201cpredicting gender\u201d as a sensitive attribute) matches the well-known CelebA attribute prediction setting, where gender is one of the labeled face attributes. The other options (LFWA/LFWA+ or the generic \u201clarge facial attribute database\u201d) are either not the specific dataset named in the downstream text or are broader constructions rather than a single referenced dataset.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "258": null,
+  "259": null,
+  "260": null,
+  "261": {
+    "choice": "folktables ACS PUMS-derived prediction datasets (ACSIncome, ACSPublicCoverage, ACSMobility, ACSEmployment, ACSTravelTime)",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper refers to using the ACS dataset specifically for income prediction fairness in a state (CA), with binary income prediction and fairness metrics\u2014matching the folktables ACSIncome task derived from ACS PUMS. The IPUMS Adult reconstruction is instead based on CPS ASEC (UCI Adult origin) rather than ACS.",
+    "dataset_id": "ad10393e-e5dc-5319-b7de-806fd3576d9a"
+  },
+  "262": null,
+  "263": null,
+  "264": null,
+  "265": {
+    "choice": "CelebA",
+    "confidence": 0.98,
+    "reasoning": "The downstream paper explicitly calls the dataset \u201cCelebA\u201d and uses it for gender-based and attractiveness-based binary classification with fairness evaluation and standard train/val/test splits. This matches the introduced CelebA face attribute dataset used for face attribute prediction in the wild.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "266": null,
+  "267": null,
+  "268": null,
+  "269": null,
+  "270": {
+    "choice": "CelebA",
+    "confidence": 0.94,
+    "reasoning": "The downstream paper explicitly refers to the \u201cCelebFaces Attributes Dataset (CelebA)\u201d and uses it for large-scale face attribute classification, consistent with the introduced CelebA dataset of 40 labeled facial attributes for images in the wild.",
+    "dataset_id": "aa6ce439-efea-5ada-9114-855ebe58ebf9"
+  },
+  "271": {
+    "choice": "Bias in Bios dataset",
+    "confidence": 0.95,
+    "reasoning": "The downstream paper describes using Bios to predict occupation from biographies and to study gender imbalance and fairness under gender pronoun/name changes, which matches the introduced Bias in Bios dataset of online biographies from Common Crawl with gendered-cue variants and occupation-classification evaluation.",
+    "dataset_id": "a373b731-5c73-5752-9268-a5f0da51c851"
+  },
+  "272": null,
+  "273": null,
+  "274": null,
+  "275": null,
+  "276": null,
+  "277": null,
+  "278": null,
+  "279": null,
+  "280": null,
+  "281": null,
+  "282": null,
+  "283": null,
+  "284": null,
+  "285": {
+    "choice": "Occupations dataset (new dataset of top Google image results for 96 occupations; top 100 results per occupation; December 2019 collection)",
+    "confidence": 0.97,
+    "reasoning": "The downstream paper describes a dataset containing the top 100 Google Image results for 96 occupation-related queries collected in December 2019 with gender labels, which directly matches the introduced Occupations image dataset.",
+    "dataset_id": "9baed990-c48b-54b0-a128-38fd50328923"
+  },
+  "286": null,
+  "287": null,
+  "288": null,
+  "289": null,
+  "290": null,
+  "291": null,
+  "292": null,
+  "293": {
+    "choice": "FairFace",
+    "confidence": 0.98,
+    "reasoning": "The downstream description matches FairFace\u2019s role as an in-the-wild face image dataset used for fairness transfer and gender classification with race as a sensitive attribute. The dataset cited is explicitly about mitigating race bias via balanced representations across race and gender, aligning with the downstream context.",
+    "dataset_id": "14518029-a672-51ec-af2c-5f567b1c3da9"
+  },
+  "294": {
+    "choice": "NONE",
+    "confidence": 0.86,
+    "reasoning": "\u201cNewAdult\u201d in the described downstream context refers to tabular fairness transfer across US geographic shifts (CA as source, other states as targets). Neither IPUMS Adult nor the folktables ACS PUMS-derived suite is described here as a California-to-rests geographic shift setup with that \u201cNewAdult\u201d alias, so the mapping to the introduced datasets cannot be determined from the provided information.",
+    "dataset_id": null
+  },
+  "295": null,
+  "296": null,
+  "297": null,
+  "298": null,
+  "299": null,
+  "300": null,
+  "301": null,
+  "302": null,
+  "303": null,
+  "304": null,
+  "305": null,
+  "306": null,
+  "307": {
+    "choice": "NONE",
+    "confidence": 0.96,
+    "reasoning": "The downstream paper describes binary sentiment classification on Amazon reviews with score-to-binary label conversion and fixed users/splits. Neither introduced dataset is a sentiment-classification dataset; both are personalized recommendation justification datasets (Yelp and Amazon Clothing) with fine-grained aspects and justification generation.",
+    "dataset_id": null
+  },
+  "308": {
+    "choice": "Human Labeled Toxicity Comments with Identity References (released as part of the dataset at https://git.io/fhpcC)",
+    "confidence": 0.86,
+    "reasoning": "The downstream description matches the human-annotated toxicity dataset with identity references: binary toxicity labels from multiple annotators and subgrouping by race categories (e.g., Black/White/Asian/Latino & others) using a train/validation/test split. The synthetic Dixon-style set instead uses templated sentences and balanced synthetic labels tied to identity terms, not human identity-reference annotation.",
+    "dataset_id": "d8a2f241-d166-54a7-9bb5-07942944084c"
+  },
+  "309": {
+    "choice": "CivilComments-wilds",
+    "confidence": 0.93,
+    "reasoning": "The downstream description matches the WILDS subpopulation-shift variant derived from Civil Comments, including 448k texts, toxicity labels, demographic/identity mention metadata, and evaluation via worst-group accuracy with disjoint article splits for train/test.",
+    "dataset_id": "f4bab748-7120-53dd-891a-28f44b42ea8e"
+  },
+  "310": {
+    "choice": "NONE",
+    "confidence": 0.2,
+    "reasoning": "The downstream paper\u2019s \u201cCelebA\u201d clearly refers to the well-known CelebA dataset, but the provided candidate list uses bracketed labels (e.g., [CelebA]) rather than the allowed raw name \u201cCelebA\u201d, so none of the allowed options can be selected unambiguously under the given constraints.",
+    "dataset_id": null
+  },
+  "311": null,
+  "312": null,
+  "313": {
+    "choice": "folktables ACS PUMS-derived prediction datasets (ACSIncome, ACSPublicCoverage, ACSMobility, ACSEmployment, ACSTravelTime)",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper\u2019s task is predicting whether a person has public health insurance coverage using an ACS PUMS-derived tabular dataset with race as the sensitive attribute, which corresponds to the introduced folktables public-coverage prediction dataset within that suite.",
+    "dataset_id": "ad10393e-e5dc-5319-b7de-806fd3576d9a"
+  },
+  "314": {
+    "choice": "Human Labeled Toxicity Comments with Identity References (released as part of the dataset at https://git.io/fhpcC)",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper uses real online comments labeled for toxicity and treats \u201cMuslim\u201d as a sensitive attribute, assigning membership based on annotation in the text\u2014this matches the human-labeled identity-reference subset rather than the synthetic Dixon templated sentences.",
+    "dataset_id": "d8a2f241-d166-54a7-9bb5-07942944084c"
+  },
+  "315": null,
+  "316": null,
+  "317": null,
+  "318": null,
+  "319": null,
+  "320": null,
+  "321": null,
+  "322": null,
+  "323": null,
+  "324": null,
+  "325": null,
+  "326": null,
+  "327": {
+    "choice": "Open University Learning Analytics dataset (OULAD)",
+    "confidence": 0.98,
+    "reasoning": "The downstream reference \u201cOULAD\u201d aligns directly with the Open University Learning Analytics dataset and its common use in learning analytics tasks involving fairness evaluation and runtime sensitivity with tabular learner/demo and clickstream features.",
+    "dataset_id": "0a04867b-cdab-5f79-abe7-d976bb7b43af"
+  },
+  "328": null,
+  "329": null,
+  "330": null,
+  "331": null,
+  "332": null,
+  "333": null,
+  "334": {
+    "choice": "Microsoft Common Objects in Context (MS COCO)",
+    "confidence": 0.96,
+    "reasoning": "The downstream paper\u2019s reference to the \u201cCOCO dataset\u201d in computer vision experiments aligns directly with the MS COCO dataset, which contains everyday images annotated for common object categories and is widely used in multiclass/object recognition settings.",
+    "dataset_id": "46d5e2d0-466a-59c9-a822-b520403aeec3"
+  },
+  "335": {
+    "choice": "Teledermatology Skin Conditions dataset (26-condition differential diagnosis; development/validation splits)",
+    "confidence": 0.74,
+    "reasoning": "The downstream paper describes predicting many skin conditions from pathology/clinical images with patient age/sex metadata and using fixed train/tune/test splits, matching the teledermatology setting of predicting ranked differential diagnoses over a set of skin conditions. The described debiasing/tuned evaluation protocol is consistent with how the 26-condition differential diagnosis dataset is typically used in ML healthcare experiments.",
+    "dataset_id": "e7d64287-6885-5e4e-a637-a3c7967d6c5a"
+  },
+  "336": null,
+  "337": null,
+  "338": {
+    "choice": "Biased FFHQ (BFFHQ)",
+    "confidence": 0.98,
+    "reasoning": "The downstream description matches a dataset where age is the label (intrinsic attribute) and gender is the biased feature, specifically using BFFHQ with a 0.5% bias-conflicting ratio and evaluating on bias-conflicting test images for age prediction.",
+    "dataset_id": "fb140383-f5be-55df-9cac-f926382ac7fa"
+  },
+  "339": null,
+  "340": {
+    "choice": "BAF base dataset (variant dataset within the suite)",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper describes \u201cBank Account Fraud (BAF)\u201d as the primary tabular dataset for bank account opening fraud detection with temporal splitting (first 6 months train, remaining 2 months test) and fairness w.r.t. customer age, which directly matches the BAF base dataset in the suite.",
+    "dataset_id": "c8fba884-9c04-5b21-94f6-bc33f7e42643"
+  },
+  "341": {
+    "choice": "Bank Account Fraud (BAF) suite (6 datasets / variants)",
+    "confidence": 0.66,
+    "reasoning": "The downstream paper\u2019s description refers to evaluating bank account fraud detection fairness under a specific controlled bias setup with temporal training/testing, which matches the purpose of the full BAF suite of variants (group size/prevalence/separability disparities across time). It doesn\u2019t provide enough detail to uniquely select one specific variant (I\u2013V) from the suite.",
+    "dataset_id": "e465de25-741c-53da-806c-3218fe71ba62"
+  },
+  "342": {
+    "choice": "BAF Variant II (within the suite)",
+    "confidence": 0.72,
+    "reasoning": "The downstream paper evaluates bank account fraud detection and explicitly mentions a stronger prevalence disparity while keeping group sizes balanced, which directly matches BAF Variant II\u2019s design (increased prevalence disparity with equal group sizes). The benchmarking of LightGBM and use of predictive-equality-style fairness is consistent with the suite\u2019s standard evaluation setup.",
+    "dataset_id": "55530c61-b72a-5b59-921d-3dc236dc650f"
+  },
+  "343": {
+    "choice": "BAF Variant III (within the suite)",
+    "confidence": 0.93,
+    "reasoning": "The downstream paper evaluates bank account fraud detection and specifically fairness under separability disparity, which matches BAF Variant III\u2019s stated purpose of inducing separability bias (making the task easier for one protected group via correlations with appended features and the target).",
+    "dataset_id": "ba50242b-29e4-5be8-9555-b6eeb7390591"
+  },
+  "344": {
+    "choice": "BAF Variant IV (within the suite)",
+    "confidence": 0.9,
+    "reasoning": "The downstream paper describes temporally changing prevalence disparity that appears in the first six months and disappears in the later months, with training on the first 6 months and testing on the remaining 2\u2014matching the explicit design of BAF Variant IV. The task/domain (bank account fraud, fairness under temporal bias, binary is_fraud) also aligns with the BAF suite specifications.",
+    "dataset_id": "ebec67d1-5a2a-5759-aa1d-d37ed837bfb0"
+  },
+  "345": {
+    "choice": "BAF Variant V (within the suite)",
+    "confidence": 0.94,
+    "reasoning": "The downstream paper describes separability bias being added for the first six months and removed afterwards, with training on the first 6 months and testing on the rest, which matches the construction of BAF Variant V (separability component present early, removed later). It is also consistent with the bank account fraud binary classification setup using the BAF suite.",
+    "dataset_id": "65b2dca7-d068-5c7c-ad8c-b83b3d5cc4f2"
+  },
+  "346": null,
+  "347": {
+    "choice": "Credit defaulter graph",
+    "confidence": 0.99,
+    "reasoning": "The downstream paper describes a 30,000-node credit network predicting credit card default and evaluating fairness metrics, which matches the constructed credit-card lending graph dataset with a default/no-default label and age as the sensitive attribute.",
+    "dataset_id": "426f6281-6ad6-5672-8442-a596b9f3e125"
+  },
+  "348": {
+    "choice": "German credit graph",
+    "confidence": 0.99,
+    "reasoning": "The downstream description matches the German credit graph: a constructed graph of 1,000 German bank clients connected by credit/account similarity, with a binary credit risk (good vs. bad) task and gender as the fairness sensitive attribute.",
+    "dataset_id": "570d4d82-7107-51c5-820d-6b880065a84d"
+  },
+  "349": null,
+  "350": null,
+  "351": null,
+  "352": null
+}
