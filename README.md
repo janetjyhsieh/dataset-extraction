@@ -2,16 +2,30 @@
 
 This repository contains the source code and evaluation for the (semi-)automated usage extraction and metadata annotation pipeline introduced in the FairGround paper. 
 
-## Install the package
+## Install the package and environment setup
 Install dataset-extraction package using the following steps:
 1. Git clone this repository.
 2. `cd dataset-extraction`
-3. `pip install .` (use `pip install -e .` to install in editable mode)
+3. `pip install -e .` to install (must be editable mode)
+4. `conda create --file environment.yml` to create our conda environment.
 
 ## Paper Evaluation Results
-The Python Notebooks in `notebooks` shows how we obtained the evaluation results of the automated pipeline.
+The Python Notebooks in `notebooks` shows how we obtained the evaluation results of the automated pipeline. 
 
 ## Run the pipeline
+### Environment Variables
+To run our automated usage extraction and metadata annotation pipeline, you must set the following environment variables. 
+1. You must have a semantic scholar API key (you can apply for one [here](https://www.semanticscholar.org/product/api)). 
+2. If you wish to download literature from OpenrReview, then you must provide your openreview username and password. 
+3. Our code currently only supports the Azure client for LLMs. You must have a LLM deployment on Azure Foundry. Provide the azure foundry endpoint and the OpenAI API version as environment variables. Finally, you must log in to your azure account using `az login`.
+```
+export S2_API_KEY="{{semantic_scholar_api_key}}"
+export OPENREVIEW_USERNAME="{{your_openreview_email}}"
+export OPENREVIEW_PASSWORD="{{your_openreview_password}}"
+export AZURE_FOUNDRY_ENDPOINT={{your_endpoint}}
+export OPENAI_API_VERSION=2025-04-01-preview
+```
+
 ### Literature download
 To download literature to run the automated FairGround pipeline on, run the following command:
 ```
